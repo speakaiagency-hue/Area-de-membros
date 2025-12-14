@@ -19,8 +19,10 @@ import type {
 
 const { Pool } = pg;
 
+// 🔧 Ajuste importante: habilitar SSL para Neon
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
+  ssl: { rejectUnauthorized: false }, // necessário para Neon no Render
 });
 
 const db = drizzle(pool, { schema });
@@ -30,33 +32,33 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Course operations
   getAllCourses(): Promise<Course[]>;
   getCourse(id: string): Promise<Course | undefined>;
   createCourse(course: InsertCourse): Promise<Course>;
   updateCourse(id: string, course: Partial<InsertCourse>): Promise<Course | undefined>;
   deleteCourse(id: string): Promise<void>;
-  
+
   // Module operations
   getModulesByCourse(courseId: string): Promise<Module[]>;
   createModule(module: InsertModule): Promise<Module>;
   updateModule(id: string, module: Partial<InsertModule>): Promise<Module | undefined>;
   deleteModule(id: string): Promise<void>;
-  
+
   // Lesson operations
   getLessonsByModule(moduleId: string): Promise<Lesson[]>;
   createLesson(lesson: InsertLesson): Promise<Lesson>;
   updateLesson(id: string, lesson: Partial<InsertLesson>): Promise<Lesson | undefined>;
   deleteLesson(id: string): Promise<void>;
-  
+
   // Community Video operations
   getAllCommunityVideos(): Promise<CommunityVideo[]>;
   getCommunityVideo(id: string): Promise<CommunityVideo | undefined>;
   createCommunityVideo(video: InsertCommunityVideo): Promise<CommunityVideo>;
   updateCommunityVideo(id: string, video: Partial<InsertCommunityVideo>): Promise<CommunityVideo | undefined>;
   deleteCommunityVideo(id: string): Promise<void>;
-  
+
   // Enrollment operations
   getEnrollmentsByUser(userId: string): Promise<Enrollment[]>;
   getEnrollment(userId: string, courseId: string): Promise<Enrollment | undefined>;
@@ -198,7 +200,7 @@ export class DatabaseStorage implements IStorage {
     const modules = await this.getModulesByCourse(courseId);
     let lessonExists = false;
     let totalLessons = 0;
-    
+
     for (const module of modules) {
       const lessons = await this.getLessonsByModule(module.id);
       totalLessons += lessons.length;
@@ -207,12 +209,10 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    // If lesson doesn't belong to this course, return undefined
     if (!lessonExists) {
       return undefined;
     }
 
-    // If already completed, return current enrollment
     if (enrollment.completedLessons.includes(lessonId)) {
       return enrollment;
     }
@@ -220,11 +220,11 @@ export class DatabaseStorage implements IStorage {
     const completedLessons = [...enrollment.completedLessons, lessonId];
     const progress = totalLessons > 0 ? Math.round((completedLessons.length / totalLessons) * 100) : 0;
 
-    const [updated] = await db.update(schema.enrollments)
+       const [updated] = await db.update(schema.enrollments)
       .set({ completedLessons, progress })
       .where(eq(schema.enrollments.id, enrollment.id))
       .returning();
-    
+
     return updated;
   }
 }

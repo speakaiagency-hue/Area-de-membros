@@ -12,10 +12,10 @@ const httpServer = createServer(app);
 
 const PgSession = connectPgSimple(session);
 
-// Ajuste: habilitar SSL para Neon
+// Ajuste: habilitar SSL para Neon/Postgres no Render
 const pgPool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // necessário para Neon no Render
+  ssl: { rejectUnauthorized: false },
 });
 
 declare module "http" {
@@ -39,7 +39,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173", // quando rodar local
-      "https://area-de-membros-niuz.onrender.com" // quando rodar no Render
+      "https://area-de-membros-niuz.onrender.com", // quando rodar no Render
     ],
     credentials: true,
   }),

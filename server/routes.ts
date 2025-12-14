@@ -32,13 +32,15 @@ export async function registerRoutes(
       // Determine role
       const role = email.toLowerCase().includes("admin") ? "admin" : "user";
 
-      // Create user
+      // Create user with username
+      const username = email.split('@')[0]; // Use email prefix as username
       const user = await storage.createUser({
         email,
         password: hashedPassword,
         name,
         role,
         avatar: "https://github.com/shadcn.png",
+        username,
       });
 
       // Set session

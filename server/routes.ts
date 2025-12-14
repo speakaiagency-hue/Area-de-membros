@@ -383,24 +383,12 @@ export async function registerRoutes(
       // Log the webhook payload for debugging
       console.log("Kiwify webhook received:", JSON.stringify(req.body, null, 2));
 
+      // Get courseId from query params (each Kiwify product has its own webhook URL)
+      const courseId = req.query.courseId as string;
+
       // Kiwify sends data in different formats depending on the event
       // Common fields: Customer.email, order_id, Product.id, etc.
       const email = req.body.Customer?.email || req.body.customer_email || req.body.email;
-      const productId = req.body.Product?.id || req.body.product_id;
-      
-      // For now, we need to map Kiwify product IDs to our course IDs
-      // This should be configured in environment variables
-      // Format: KIWIFY_PRODUCT_MAPPING={"kiwify_product_id":"course_id"}
-      let courseId = req.body.courseId; // Direct mapping if provided
-      
-      if (!courseId && productId && process.env.KIWIFY_PRODUCT_MAPPING) {
-        try {
-          const mapping = JSON.parse(process.env.KIWIFY_PRODUCT_MAPPING);
-          courseId = mapping[productId];
-        } catch (e) {
-          console.error("Error parsing KIWIFY_PRODUCT_MAPPING:", e);
-        }
-      }
 
       // Validate required fields
       if (!email) {
@@ -409,8 +397,7 @@ export async function registerRoutes(
 
       if (!courseId) {
         return res.status(400).json({ 
-          message: "Missing courseId. Please configure KIWIFY_PRODUCT_MAPPING or include courseId in webhook payload",
-          productId: productId 
+          message: "Missing courseId in URL. Use: /api/webhook/kiwify?token=XXX&courseId=YYY"
         });
       }
 

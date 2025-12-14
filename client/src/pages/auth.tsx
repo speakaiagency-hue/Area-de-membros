@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useApp } from "@/lib/mockData";
+import { useLogin, useRegister } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,10 +11,8 @@ import { AuthLayout } from "@/components/layout";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
-  const { login } = useApp();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -22,43 +20,45 @@ export default function AuthPage() {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
 
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simple mock auth logic
-    // Specific check for the requested admin credentials
-    if (email === "speakai.agency@gmail.com" && password === "Diamante2019@") {
-      login(email, "admin");
-    } else if (email.includes("admin") && password === "admin") { // Fallback dev admin
-      login(email, "admin");
-    } else {
-      login(email, "user");
+    try {
+      await loginMutation.mutateAsync({ email, password });
+      toast({
+        title: "Bem-vindo de volta!",
+        description: "Login realizado com sucesso.",
+      });
+      setLocation("/");
+    } catch (error: any) {
+      toast({
+        title: "Erro no login",
+        description: error.message || "Credenciais inválidas",
+        variant: "destructive",
+      });
     }
-    
-    setIsLoading(false);
-    setLocation("/");
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Mock register logic -> straight to login
-    toast({
-      title: "Conta criada com sucesso!",
-      description: "Você já pode acessar a plataforma.",
-    });
-    
-    login(regEmail, "user");
-    setIsLoading(false);
-    setLocation("/");
+    try {
+      await registerMutation.mutateAsync({ name: regName, email: regEmail, password: regPassword });
+      toast({
+        title: "Conta criada com sucesso!",
+        description: "Você já pode acessar a plataforma.",
+      });
+      setLocation("/");
+    } catch (error: any) {
+      toast({
+        title: "Erro no registro",
+        description: error.message || "Não foi possível criar a conta",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -94,8 +94,8 @@ export default function AuthPage() {
                     required 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    data-testid="input-email"
                   />
-                  <p className="text-[10px] text-muted-foreground">Dica: use 'admin' no email para acesso administrativo.</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Senha</Label>
@@ -105,12 +105,13 @@ export default function AuthPage() {
                     required 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    data-testid="input-password"
                   />
                 </div>
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full" disabled={loginMutation.isPending} data-testid="button-login">
+                  {loginMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Entrar
                 </Button>
               </CardFooter>
@@ -134,6 +135,7 @@ export default function AuthPage() {
                     required 
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
+                    data-testid="input-name"
                   />
                 </div>
                 <div className="space-y-2">
@@ -145,6 +147,7 @@ export default function AuthPage() {
                     required
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
+                    data-testid="input-reg-email"
                   />
                 </div>
                 <div className="space-y-2">
@@ -155,12 +158,13 @@ export default function AuthPage() {
                     required
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
+                    data-testid="input-reg-password"
                   />
                 </div>
               </CardContent>
               <CardFooter>
-                <Button type="submit" className="w-full" variant="secondary" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full" variant="secondary" disabled={registerMutation.isPending} data-testid="button-register">
+                  {registerMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Criar conta
                 </Button>
               </CardFooter>

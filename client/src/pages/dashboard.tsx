@@ -1,17 +1,30 @@
-import { useApp } from "@/lib/mockData";
+import { useAuth } from "@/lib/auth";
+import { useCourses, useEnrollments } from "@/lib/api";
 import { DashboardLayout } from "@/components/layout";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlayCircle, Lock } from "lucide-react";
+import { PlayCircle, Lock, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 
 export default function DashboardHome() {
-  const { user, courses, enrollments } = useApp();
+  const { user } = useAuth();
+  const { data: courses, isLoading: coursesLoading } = useCourses();
+  const { data: enrollments, isLoading: enrollmentsLoading } = useEnrollments();
 
   // Helper to check enrollment status
-  const getEnrollment = (courseId: string) => enrollments.find(e => e.userId === user?.id && e.courseId === courseId);
+  const getEnrollment = (courseId: string) => enrollments?.find(e => e.userId === user?.id && e.courseId === courseId);
+
+  if (coursesLoading || enrollmentsLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -22,7 +35,7 @@ export default function DashboardHome() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => {
+          {courses?.map((course) => {
             const enrollment = getEnrollment(course.id);
             const isEnrolled = !!enrollment;
             const progress = enrollment?.progress || 0;
@@ -76,7 +89,7 @@ export default function DashboardHome() {
                       </div>
                       <Progress value={progress} className="h-2" />
                       <Link href={`/course/${course.id}`}>
-                        <Button className="w-full mt-4 group-hover:translate-y-0 translate-y-1 transition-transform">
+                        <Button className="w-full mt-4 group-hover:translate-y-0 translate-y-1 transition-transform" data-testid={`button-course-${course.id}`}>
                           Acessar Aulas
                         </Button>
                       </Link>

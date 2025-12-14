@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { useApp, CommunityVideo } from "@/lib/mockData";
+import { useAuth } from "@/lib/auth";
+import { useCommunityVideos, useCreateCommunityVideo, useUpdateCommunityVideo, useDeleteCommunityVideo } from "@/lib/api";
+import type { CommunityVideo } from "@shared/schema";
 import { DashboardLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +11,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Play, Trash, Edit, Search, Video } from "lucide-react";
+import { Plus, Play, Trash, Edit, Search, Video, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CommunityPage() {
-  const { user, communityVideos, addCommunityVideo, deleteCommunityVideo, updateCommunityVideo } = useApp();
+  const { user } = useAuth();
+  const { data: communityVideos, isLoading } = useCommunityVideos();
+  const createVideoMutation = useCreateCommunityVideo();
+  const updateVideoMutation = useUpdateCommunityVideo();
+  const deleteVideoMutation = useDeleteCommunityVideo();
+  const { toast } = useToast();
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -29,11 +37,11 @@ export default function CommunityPage() {
 
   const isAdmin = user?.role === "admin";
 
-  const filteredVideos = communityVideos.filter(video => 
+  const filteredVideos = communityVideos?.filter(video => 
     video.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
     video.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     video.authorName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
   const resetForm = () => {
     setFormData({
@@ -44,20 +52,28 @@ export default function CommunityPage() {
     });
   };
 
-  const handleAddVideo = () => {
-    const newVideo: CommunityVideo = {
-      id: `v${Date.now()}`,
-      title: formData.title,
-      description: formData.description,
-      videoUrl: formData.videoUrl,
-      authorName: formData.authorName,
-      authorAvatar: user?.avatar,
-      createdAt: new Date().toISOString()
-    };
-    
-    addCommunityVideo(newVideo);
-    setIsAddDialogOpen(false);
-    resetForm();
+  const handleAddVideo = async () => {
+    try {
+      await createVideoMutation.mutateAsync({
+        title: formData.title,
+        description: formData.description,
+        videoUrl: formData.videoUrl,
+        authorName: formData.authorName,
+        authorAvatar: user?.avatar
+      });
+      toast({
+        title: "Vídeo Adicionado",
+        description: "O vídeo foi publicado na comunidade.",
+      });
+      setIsAddDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o vídeo.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditClick = (video: CommunityVideo) => {
@@ -71,22 +87,63 @@ export default function CommunityPage() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateVideo = () => {
+  const handleUpdateVideo = async () => {
     if (!currentVideo) return;
     
-    const updatedVideo: CommunityVideo = {
-      ...currentVideo,
-      title: formData.title,
-      description: formData.description,
-      videoUrl: formData.videoUrl,
-      authorName: formData.authorName
-    };
-    
-    updateCommunityVideo(updatedVideo);
-    setIsEditDialogOpen(false);
-    setCurrentVideo(null);
-    resetForm();
+    try {
+      await updateVideoMutation.mutateAsync({
+        id: currentVideo.id,
+        data: {
+          title: formData.title,
+          description: formData.description,
+          videoUrl: formData.videoUrl,
+          authorName: formData.authorName,
+          authorAvatar: currentVideo.authorAvatar
+        }
+      });
+      toast({
+        title: "Vídeo Atualizado",
+        description: "As alterações foram salvas.",
+      });
+      setIsEditDialogOpen(false);
+      setCurrentVideo(null);
+      resetForm();
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o vídeo.",
+        variant: "destructive",
+      });
+    }
   };
+
+  const handleDeleteVideo = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este vídeo?")) return;
+    
+    try {
+      await deleteVideoMutation.mutateAsync(id);
+      toast({
+        title: "Vídeo Removido",
+        description: "O vídeo foi removido da comunidade.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o vídeo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -301,7 +358,7 @@ export default function CommunityPage() {
                     <Button variant="ghost" size="sm" onClick={() => handleEditClick(video)}>
                       <Edit className="h-4 w-4 mr-2" /> Editar
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => deleteCommunityVideo(video.id)}>
+                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteVideo(video.id)} data-testid={`button-delete-video-${video.id}`}>
                       <Trash className="h-4 w-4 mr-2" /> Excluir
                     </Button>
                   </CardFooter>

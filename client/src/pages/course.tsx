@@ -1,20 +1,25 @@
 import { useState, useEffect } from "react";
 import { useRoute, Link } from "wouter";
-import { useApp, Course, Module, Lesson } from "@/lib/mockData";
+import { useCourses, useEnrollments, useCompleteLesson } from "@/lib/api";
+import type { Lesson } from "@shared/schema";
 import { DashboardLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { CheckCircle, PlayCircle, FileText, ChevronLeft, Download } from "lucide-react";
+import { CheckCircle, PlayCircle, FileText, ChevronLeft, Download, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CoursePlayer() {
   const [, params] = useRoute("/course/:id");
-  const { courses, enrollments, markLessonComplete } = useApp();
+  const { data: courses, isLoading: coursesLoading } = useCourses();
+  const { data: enrollments, isLoading: enrollmentsLoading } = useEnrollments();
+  const completeLessonMutation = useCompleteLesson();
+  const { toast } = useToast();
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   
-  const course = courses.find(c => c.id === params?.id);
+  const course = courses?.find(c => c.id === params?.id);
   
   // Initialize active lesson
   useEffect(() => {
@@ -23,18 +28,40 @@ export default function CoursePlayer() {
     }
   }, [course, activeLesson]);
 
+  if (coursesLoading || enrollmentsLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (!course) return <div>Curso não encontrado</div>;
 
-  const enrollment = enrollments.find(e => e.courseId === course.id);
+  const enrollment = enrollments?.find(e => e.courseId === course.id);
   const completedLessons = enrollment?.completedLessons || [];
 
   const handleLessonSelect = (lesson: Lesson) => {
     setActiveLesson(lesson);
   };
 
-  const handleMarkComplete = () => {
-    if (activeLesson) {
-      markLessonComplete(course.id, activeLesson.id);
+  const handleMarkComplete = async () => {
+    if (activeLesson && course) {
+      try {
+        await completeLessonMutation.mutateAsync({ courseId: course.id, lessonId: activeLesson.id });
+        toast({
+          title: "Aula concluída!",
+          description: "Seu progresso foi atualizado.",
+        });
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível marcar a aula como concluída.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -92,6 +119,8 @@ export default function CoursePlayer() {
                   onClick={handleMarkComplete}
                   variant={activeLesson && isCompleted(activeLesson.id) ? "secondary" : "default"}
                   className="gap-2 shrink-0"
+                  disabled={completeLessonMutation.isPending}
+                  data-testid="button-mark-complete"
                 >
                   {activeLesson && isCompleted(activeLesson.id) ? (
                     <>

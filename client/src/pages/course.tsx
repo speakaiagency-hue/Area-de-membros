@@ -54,14 +54,15 @@ export default function CoursePlayer() {
           <span className="font-medium text-foreground">{course.title}</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-180px)] min-h-[600px]">
-          {/* Main Content Area */}
-          <div className="lg:col-span-2 flex flex-col gap-4 overflow-y-auto pr-2">
-            <div className="bg-black rounded-xl overflow-hidden shadow-2xl relative group flex items-center justify-center min-h-[400px]">
+        <div className="flex gap-6 h-[calc(100vh-theme(spacing.32))] min-h-0 flex-col lg:flex-row overflow-hidden">
+          {/* Main Content Area - Left Column */}
+          <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+            {/* Video Player Container - Flexible height */}
+            <div className="flex-1 bg-black rounded-xl overflow-hidden shadow-2xl relative group flex items-center justify-center min-h-0">
               {activeLesson ? (
                 activeLesson.videoUrl.includes("embed") || activeLesson.videoUrl.includes("youtube") ? (
                   <iframe 
-                    className="w-full aspect-video"
+                    className="w-full h-full"
                     src={activeLesson.videoUrl} 
                     title={activeLesson.title}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
@@ -69,7 +70,7 @@ export default function CoursePlayer() {
                   ></iframe>
                 ) : (
                   <video 
-                    className="w-full h-auto max-h-[75vh] object-contain"
+                    className="w-full h-full object-contain"
                     controls
                     autoPlay
                     src={activeLesson.videoUrl}
@@ -80,55 +81,58 @@ export default function CoursePlayer() {
               )}
             </div>
 
-            <div className="flex items-start justify-between gap-4 p-1">
-              <div>
-                <h2 className="text-2xl font-bold">{activeLesson?.title}</h2>
-                <p className="text-muted-foreground mt-1">Módulo: {course.modules.find(m => m.lessons.some(l => l.id === activeLesson?.id))?.title}</p>
+            {/* Lesson Details - Fixed height section below video */}
+            <div className="shrink-0 pt-4 pb-2 space-y-4 overflow-y-auto max-h-[40%] pr-2">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold">{activeLesson?.title}</h2>
+                  <p className="text-muted-foreground mt-1">Módulo: {course.modules.find(m => m.lessons.some(l => l.id === activeLesson?.id))?.title}</p>
+                </div>
+                <Button 
+                  onClick={handleMarkComplete}
+                  variant={activeLesson && isCompleted(activeLesson.id) ? "secondary" : "default"}
+                  className="gap-2 shrink-0"
+                >
+                  {activeLesson && isCompleted(activeLesson.id) ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Concluída
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      Marcar como Concluída
+                    </>
+                  )}
+                </Button>
               </div>
-              <Button 
-                onClick={handleMarkComplete}
-                variant={activeLesson && isCompleted(activeLesson.id) ? "secondary" : "default"}
-                className="gap-2 shrink-0"
-              >
-                {activeLesson && isCompleted(activeLesson.id) ? (
-                  <>
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    Concluída
-                  </>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Materiais Complementares</h3>
+                {activeLesson?.pdfUrl ? (
+                   <div className="flex items-center p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors cursor-pointer group">
+                     <div className="h-10 w-10 rounded bg-red-100 text-red-600 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
+                       <FileText className="h-5 w-5" />
+                     </div>
+                     <div className="flex-1">
+                       <div className="font-medium">Resumo da Aula (PDF)</div>
+                       <div className="text-xs text-muted-foreground">Clique para baixar</div>
+                     </div>
+                     <Button size="icon" variant="ghost">
+                       <Download className="h-4 w-4" />
+                     </Button>
+                   </div>
                 ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    Marcar como Concluída
-                  </>
+                  <p className="text-sm text-muted-foreground italic">Nenhum material extra disponível para esta aula.</p>
                 )}
-              </Button>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Materiais Complementares</h3>
-              {activeLesson?.pdfUrl ? (
-                 <div className="flex items-center p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors cursor-pointer group">
-                   <div className="h-10 w-10 rounded bg-red-100 text-red-600 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
-                     <FileText className="h-5 w-5" />
-                   </div>
-                   <div className="flex-1">
-                     <div className="font-medium">Resumo da Aula (PDF)</div>
-                     <div className="text-xs text-muted-foreground">Clique para baixar</div>
-                   </div>
-                   <Button size="icon" variant="ghost">
-                     <Download className="h-4 w-4" />
-                   </Button>
-                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">Nenhum material extra disponível para esta aula.</p>
-              )}
+              </div>
             </div>
           </div>
 
-          {/* Sidebar Playlist */}
-          <div className="lg:col-span-1 bg-card border rounded-xl overflow-hidden flex flex-col h-full shadow-sm">
+          {/* Sidebar Playlist - Right Column */}
+          <div className="lg:w-80 shrink-0 bg-card border rounded-xl overflow-hidden flex flex-col h-full shadow-sm">
             <div className="p-4 border-b bg-muted/30">
               <h3 className="font-semibold">Conteúdo do Curso</h3>
               <div className="text-xs text-muted-foreground mt-1">

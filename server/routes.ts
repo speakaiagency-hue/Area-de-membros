@@ -372,17 +372,46 @@ export async function registerRoutes(
   // Webhook endpoint for Kiwify integration
   app.post("/api/webhook/kiwify", async (req, res) => {
     try {
-      // Validate webhook secret for security
-      const webhookSecret = req.headers['x-webhook-secret'];
-      if (webhookSecret !== process.env.KIWIFY_WEBHOOK_SECRET) {
-        return res.status(401).json({ message: "Invalid webhook secret" });
+      // Validate webhook token for security
+      // Kiwify sends token in query params or body
+      const token = req.query.token || req.body.token;
+      
+      if (!token || token !== process.env.KIWIFY_WEBHOOK_SECRET) {
+        return res.status(401).json({ message: "Invalid webhook token" });
       }
 
-      const { email, courseId } = req.body;
+      // Log the webhook payload for debugging
+      console.log("Kiwify webhook received:", JSON.stringify(req.body, null, 2));
+
+      // Kiwify sends data in different formats depending on the event
+      // Common fields: Customer.email, order_id, Product.id, etc.
+      const email = req.body.Customer?.email || req.body.customer_email || req.body.email;
+      const productId = req.body.Product?.id || req.body.product_id;
+      
+      // For now, we need to map Kiwify product IDs to our course IDs
+      // This should be configured in environment variables
+      // Format: KIWIFY_PRODUCT_MAPPING={"kiwify_product_id":"course_id"}
+      let courseId = req.body.courseId; // Direct mapping if provided
+      
+      if (!courseId && productId && process.env.KIWIFY_PRODUCT_MAPPING) {
+        try {
+          const mapping = JSON.parse(process.env.KIWIFY_PRODUCT_MAPPING);
+          courseId = mapping[productId];
+        } catch (e) {
+          console.error("Error parsing KIWIFY_PRODUCT_MAPPING:", e);
+        }
+      }
 
       // Validate required fields
-      if (!email || !courseId) {
-        return res.status(400).json({ message: "Missing required fields: email and courseId" });
+      if (!email) {
+        return res.status(400).json({ message: "Missing required field: email" });
+      }
+
+      if (!courseId) {
+        return res.status(400).json({ 
+          message: "Missing courseId. Please configure KIWIFY_PRODUCT_MAPPING or include courseId in webhook payload",
+          productId: productId 
+        });
       }
 
       // Validate email format
@@ -394,7 +423,7 @@ export async function registerRoutes(
       // Verify course exists
       const course = await storage.getCourse(courseId);
       if (!course) {
-        return res.status(404).json({ message: "Course not found" });
+        return res.status(404).json({ message: "Course not found", courseId });
       }
       
       let user = await storage.getUserByEmail(email);

@@ -10,9 +10,12 @@ import { createServer } from "http";
 const app = express();
 const httpServer = createServer(app);
 
+// ✅ necessário para que o Express envie cookies com secure: true atrás de proxy HTTPS
+app.set("trust proxy", 1);
+
 const PgSession = connectPgSimple(session);
 
-// Ajuste: habilitar SSL para Neon/Postgres no Render
+// ✅ habilitar SSL para Neon/Postgres no Render
 const pgPool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },

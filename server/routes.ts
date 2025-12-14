@@ -15,25 +15,22 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Authentication Routes
+  // =========================
+  // 🔐 Authentication Routes
+  // =========================
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { email, password, name } = req.body;
-      
-      // Check if user exists
+
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
         return res.status(400).json({ message: "User already exists" });
       }
 
-      // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Determine role
       const role = email.toLowerCase().includes("admin") ? "admin" : "user";
+      const username = email.split("@")[0];
 
-      // Create user with username
-      const username = email.split('@')[0]; // Use email prefix as username
       const user = await storage.createUser({
         email,
         password: hashedPassword,
@@ -43,7 +40,6 @@ export async function registerRoutes(
         username,
       });
 
-      // Set session
       req.session.userId = user.id;
 
       res.json({
@@ -93,10 +89,12 @@ export async function registerRoutes(
       if (err) {
         return res.status(500).json({ message: "Logout failed" });
       }
+      res.clearCookie("connect.sid"); // 🔧 garante que o cookie seja removido
       res.json({ message: "Logged out successfully" });
     });
   });
 
+  // 🔑 Rota para restaurar sessão ao dar F5
   app.get("/api/auth/me", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -116,7 +114,9 @@ export async function registerRoutes(
     });
   });
 
-  // Middleware to check authentication
+  // =========================
+  // 🔒 Middleware
+  // =========================
   const requireAuth = (req: any, res: any, next: any) => {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -135,12 +135,12 @@ export async function registerRoutes(
     next();
   };
 
-  // Course Routes
-  app.get("/api/courses", requireAuth, async (req, res) => {
+  // =========================
+  // 📚 Course Routes
+  // =========================
+  app.get("/api/courses", requireAuth, async (_req, res) => {
     try {
       const courses = await storage.getAllCourses();
-      
-      // Get modules and lessons for each course
       const coursesWithContent = await Promise.all(
         courses.map(async (course) => {
           const modules = await storage.getModulesByCourse(course.id);
@@ -153,7 +153,6 @@ export async function registerRoutes(
           return { ...course, modules: modulesWithLessons };
         })
       );
-
       res.json(coursesWithContent);
     } catch (error) {
       console.error("Get courses error:", error);
@@ -170,7 +169,7 @@ export async function registerRoutes(
       console.error("Create course error:", error);
       res.status(500).json({ message: "Failed to create course" });
     }
-  });
+   });
 
   app.put("/api/courses/:id", requireAdmin, async (req, res) => {
     try {
@@ -185,7 +184,6 @@ export async function registerRoutes(
 
       // Handle modules if provided
       if (modules) {
-        // Get existing modules
         const existingModules = await storage.getModulesByCourse(id);
         const existingModuleIds = new Set(existingModules.map(m => m.id));
         const newModuleIds = new Set(modules.map((m: any) => m.id).filter(Boolean));
@@ -201,12 +199,10 @@ export async function registerRoutes(
         for (let i = 0; i < modules.length; i++) {
           const moduleData = modules[i];
           const { lessons, ...moduleFields } = moduleData;
-          
+
           if (moduleData.id && existingModuleIds.has(moduleData.id)) {
-            // Update existing module
             await storage.updateModule(moduleData.id, { ...moduleFields, order: i });
           } else {
-            // Create new module
             const newModule = await storage.createModule({
               courseId: id,
               title: moduleFields.title,
@@ -231,12 +227,10 @@ export async function registerRoutes(
             // Update or create lessons
             for (let j = 0; j < lessons.length; j++) {
               const lessonData = lessons[j];
-              
+
               if (lessonData.id && existingLessonIds.has(lessonData.id)) {
-                // Update existing lesson
                 await storage.updateLesson(lessonData.id, { ...lessonData, order: j });
               } else {
-                // Create new lesson
                 await storage.createLesson({
                   moduleId: moduleData.id,
                   title: lessonData.title,
@@ -271,14 +265,16 @@ export async function registerRoutes(
     try {
       await storage.deleteCourse(req.params.id);
       res.json({ message: "Course deleted" });
-    } catch (error) {
+       } catch (error) {
       console.error("Delete course error:", error);
       res.status(500).json({ message: "Failed to delete course" });
     }
   });
 
-  // Community Videos Routes
-  app.get("/api/community-videos", requireAuth, async (req, res) => {
+  // =========================
+  // 🎥 Community Videos Routes
+  // =========================
+  app.get("/api/community-videos", requireAuth, async (_req, res) => {
     try {
       const videos = await storage.getAllCommunityVideos();
       res.json(videos);
@@ -322,7 +318,9 @@ export async function registerRoutes(
     }
   });
 
-  // Enrollment Routes
+  // =========================
+  // 🎓 Enrollment Routes
+  // =========================
   app.get("/api/enrollments", requireAuth, async (req, res) => {
     try {
       const enrollments = await storage.getEnrollmentsByUser(req.session.userId!);
@@ -353,13 +351,12 @@ export async function registerRoutes(
     try {
       const { courseId, lessonId } = req.body;
 
-      // Validate required fields
       if (!courseId || !lessonId) {
         return res.status(400).json({ message: "Missing required fields: courseId and lessonId" });
       }
 
       const enrollment = await storage.markLessonComplete(req.session.userId!, courseId, lessonId);
-      
+
       if (!enrollment) {
         return res.status(404).json({ message: "Enrollment not found. Please enroll in the course first." });
       }
@@ -371,40 +368,30 @@ export async function registerRoutes(
     }
   });
 
-  // Webhook endpoint for Kiwify integration
+  // =========================
+  // 🔗 Webhook endpoint (Kiwify)
+  // =========================
   app.post("/api/webhook/kiwify", async (req, res) => {
     try {
-      // Validate webhook token for security
-      // Kiwify sends token in query params or body
       const token = req.query.token || req.body.token;
-      
       if (!token || token !== process.env.KIWIFY_WEBHOOK_SECRET) {
         return res.status(401).json({ message: "Invalid webhook token" });
       }
 
-      // Log the webhook payload for debugging
       console.log("Kiwify webhook received:", JSON.stringify(req.body, null, 2));
 
-      // Kiwify sends data in different formats depending on the event
-      // Common fields: Customer.email, order_id, Product.id, etc.
       const email = req.body.Customer?.email || req.body.customer_email || req.body.email;
-
-      // Get courseId from multiple possible sources:
-      // 1. Query params (if using different webhook URLs per product)
-      // 2. Webhook body metadata/custom_fields (if Kiwify supports it)
-      // 3. Product mapping via environment variable
       let courseId = req.query.courseId as string;
-      
+
       if (!courseId) {
-        // Try to get from webhook body metadata
-        courseId = req.body.metadata?.courseId || 
-                   req.body.custom_fields?.courseId || 
-                   req.body.courseId ||
-                   req.body.Product?.metadata?.courseId;
+        courseId =
+          req.body.metadata?.courseId ||
+          req.body.custom_fields?.courseId ||
+          req.body.courseId ||
+          req.body.Product?.metadata?.courseId;
       }
 
       if (!courseId && req.body.Product?.id && process.env.KIWIFY_PRODUCT_MAPPING) {
-        // Fallback: use product mapping
         try {
           const mapping = JSON.parse(process.env.KIWIFY_PRODUCT_MAPPING);
           courseId = mapping[req.body.Product.id];
@@ -413,34 +400,30 @@ export async function registerRoutes(
         }
       }
 
-      // Validate required fields
       if (!email) {
         return res.status(400).json({ message: "Missing required field: email" });
       }
 
       if (!courseId) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: "Missing courseId. Please configure one of: URL param, webhook metadata, or KIWIFY_PRODUCT_MAPPING",
           receivedProductId: req.body.Product?.id,
-          hint: "Add ?courseId=XXX to webhook URL or configure KIWIFY_PRODUCT_MAPPING"
+          hint: "Add ?courseId=XXX to webhook URL or configure KIWIFY_PRODUCT_MAPPING",
         });
       }
 
-      // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return res.status(400).json({ message: "Invalid email format" });
       }
 
-      // Verify course exists
       const course = await storage.getCourse(courseId);
       if (!course) {
         return res.status(404).json({ message: "Course not found", courseId });
       }
-      
+
       let user = await storage.getUserByEmail(email);
       if (!user) {
-        // Create user if doesn't exist
         const tempPassword = Math.random().toString(36).slice(-8);
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
         user = await storage.createUser({
@@ -452,13 +435,11 @@ export async function registerRoutes(
         });
       }
 
-      // Check if already enrolled
       const existing = await storage.getEnrollment(user.id, courseId);
       if (existing) {
         return res.json({ message: "User already enrolled", enrollment: existing });
       }
 
-      // Create enrollment
       const enrollment = await storage.createEnrollment({
         userId: user.id,
         courseId,

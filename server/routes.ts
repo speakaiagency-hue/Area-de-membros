@@ -383,12 +383,33 @@ export async function registerRoutes(
       // Log the webhook payload for debugging
       console.log("Kiwify webhook received:", JSON.stringify(req.body, null, 2));
 
-      // Get courseId from query params (each Kiwify product has its own webhook URL)
-      const courseId = req.query.courseId as string;
-
       // Kiwify sends data in different formats depending on the event
       // Common fields: Customer.email, order_id, Product.id, etc.
       const email = req.body.Customer?.email || req.body.customer_email || req.body.email;
+
+      // Get courseId from multiple possible sources:
+      // 1. Query params (if using different webhook URLs per product)
+      // 2. Webhook body metadata/custom_fields (if Kiwify supports it)
+      // 3. Product mapping via environment variable
+      let courseId = req.query.courseId as string;
+      
+      if (!courseId) {
+        // Try to get from webhook body metadata
+        courseId = req.body.metadata?.courseId || 
+                   req.body.custom_fields?.courseId || 
+                   req.body.courseId ||
+                   req.body.Product?.metadata?.courseId;
+      }
+
+      if (!courseId && req.body.Product?.id && process.env.KIWIFY_PRODUCT_MAPPING) {
+        // Fallback: use product mapping
+        try {
+          const mapping = JSON.parse(process.env.KIWIFY_PRODUCT_MAPPING);
+          courseId = mapping[req.body.Product.id];
+        } catch (e) {
+          console.error("Error parsing KIWIFY_PRODUCT_MAPPING:", e);
+        }
+      }
 
       // Validate required fields
       if (!email) {
@@ -397,7 +418,9 @@ export async function registerRoutes(
 
       if (!courseId) {
         return res.status(400).json({ 
-          message: "Missing courseId in URL. Use: /api/webhook/kiwify?token=XXX&courseId=YYY"
+          message: "Missing courseId. Please configure one of: URL param, webhook metadata, or KIWIFY_PRODUCT_MAPPING",
+          receivedProductId: req.body.Product?.id,
+          hint: "Add ?courseId=XXX to webhook URL or configure KIWIFY_PRODUCT_MAPPING"
         });
       }
 

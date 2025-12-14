@@ -57,15 +57,24 @@ export default function CoursePlayer() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-180px)] min-h-[600px]">
           {/* Main Content Area */}
           <div className="lg:col-span-2 flex flex-col gap-4 overflow-y-auto pr-2">
-            <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl relative group">
+            <div className="bg-black rounded-xl overflow-hidden shadow-2xl relative group flex items-center justify-center min-h-[400px]">
               {activeLesson ? (
-                <iframe 
-                  className="w-full h-full"
-                  src={activeLesson.videoUrl} 
-                  title={activeLesson.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowFullScreen
-                ></iframe>
+                activeLesson.videoUrl.includes("embed") || activeLesson.videoUrl.includes("youtube") ? (
+                  <iframe 
+                    className="w-full aspect-video"
+                    src={activeLesson.videoUrl} 
+                    title={activeLesson.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen
+                  ></iframe>
+                ) : (
+                  <video 
+                    className="w-full h-auto max-h-[75vh] object-contain"
+                    controls
+                    autoPlay
+                    src={activeLesson.videoUrl}
+                  />
+                )
               ) : (
                 <div className="flex items-center justify-center h-full text-white">Selecione uma aula</div>
               )}

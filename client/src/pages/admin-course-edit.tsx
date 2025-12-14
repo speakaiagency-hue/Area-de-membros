@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRoute, Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useCourses, useUpdateCourse, useCreateModule, useUpdateModule, useDeleteModule, useCreateLesson, useUpdateLesson, useDeleteLesson } from "@/lib/api";
@@ -41,6 +41,7 @@ export default function AdminCourseEditor() {
   const { toast } = useToast();
   
   const [course, setCourse] = useState<CourseWithModulesAndLessons | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (coursesData && params?.id) {
@@ -78,7 +79,7 @@ export default function AdminCourseEditor() {
     );
   }
 
-  const handleSaveCourse = () => {
+  const handleSaveCourse = (showToast = true) => {
     // Salvar curso completo com módulos e aulas
     updateCourseMutation.mutate(
       { 
@@ -93,10 +94,12 @@ export default function AdminCourseEditor() {
       },
       {
         onSuccess: () => {
-          toast({ title: "Sucesso", description: "Curso atualizado com sucesso!" });
+          if (showToast) {
+            toast({ title: "Sucesso", description: "Curso salvo com sucesso!" });
+          }
         },
         onError: () => {
-          toast({ title: "Erro", description: "Falha ao atualizar curso", variant: "destructive" });
+          toast({ title: "Erro", description: "Falha ao salvar curso", variant: "destructive" });
         }
       }
     );
@@ -109,12 +112,33 @@ export default function AdminCourseEditor() {
       lessons: []
     };
     
-    setCourse({
+    const updatedCourse = {
       ...course,
       modules: [...course.modules, newModule as any]
-    });
+    };
     
-    toast({ title: "Módulo adicionado", description: "Clique em 'Salvar Curso' para confirmar" });
+    setCourse(updatedCourse);
+    
+    // Auto-save
+    setTimeout(() => {
+      updateCourseMutation.mutate(
+        { 
+          id: course.id, 
+          data: { 
+            title: updatedCourse.title, 
+            description: updatedCourse.description, 
+            coverImage: updatedCourse.coverImage, 
+            author: updatedCourse.author,
+            modules: updatedCourse.modules 
+          } 
+        },
+        {
+          onSuccess: () => {
+            toast({ title: "Módulo adicionado", description: "Salvo automaticamente!" });
+          }
+        }
+      );
+    }, 500);
   };
 
   const handleDeleteModule = (moduleIndex: number) => {
@@ -128,7 +152,9 @@ export default function AdminCourseEditor() {
   const handleUpdateModuleTitle = (moduleIndex: number, newTitle: string) => {
     const updatedModules = [...course.modules];
     updatedModules[moduleIndex] = { ...updatedModules[moduleIndex], title: newTitle };
-    setCourse({ ...course, modules: updatedModules });
+    const updatedCourse = { ...course, modules: updatedModules };
+    setCourse(updatedCourse);
+    autoSave(updatedCourse);
   };
 
   const handleAddLesson = (moduleIndex: number) => {
@@ -145,8 +171,29 @@ export default function AdminCourseEditor() {
       lessons: [...updatedModules[moduleIndex].lessons, newLesson as any]
     };
     
-    setCourse({ ...course, modules: updatedModules });
-    toast({ title: "Aula adicionada", description: "Clique em 'Salvar Curso' para confirmar" });
+    const updatedCourse = { ...course, modules: updatedModules };
+    setCourse(updatedCourse);
+    
+    // Auto-save
+    setTimeout(() => {
+      updateCourseMutation.mutate(
+        { 
+          id: course.id, 
+          data: { 
+            title: updatedCourse.title, 
+            description: updatedCourse.description, 
+            coverImage: updatedCourse.coverImage, 
+            author: updatedCourse.author,
+            modules: updatedCourse.modules 
+          } 
+        },
+        {
+          onSuccess: () => {
+            toast({ title: "Aula adicionada", description: "Salvo automaticamente!" });
+          }
+        }
+      );
+    }, 500);
   };
 
   const handleDeleteLesson = (moduleIndex: number, lessonIndex: number) => {
@@ -160,6 +207,34 @@ export default function AdminCourseEditor() {
     toast({ title: "Aula removida", description: "Clique em 'Salvar Curso' para confirmar" });
   };
 
+  const autoSave = (updatedCourse: CourseWithModulesAndLessons) => {
+    // Clear previous timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set new timeout for auto-save
+    saveTimeoutRef.current = setTimeout(() => {
+      updateCourseMutation.mutate(
+        { 
+          id: updatedCourse.id, 
+          data: { 
+            title: updatedCourse.title, 
+            description: updatedCourse.description, 
+            coverImage: updatedCourse.coverImage, 
+            author: updatedCourse.author,
+            modules: updatedCourse.modules 
+          } 
+        },
+        {
+          onSuccess: () => {
+            console.log("Auto-saved");
+          }
+        }
+      );
+    }, 2000); // Save after 2 seconds of inactivity
+  };
+
   const handleUpdateLesson = (moduleIndex: number, lessonIndex: number, field: string, value: string) => {
     const updatedModules = [...course.modules];
     updatedModules[moduleIndex] = {
@@ -169,7 +244,9 @@ export default function AdminCourseEditor() {
       )
     };
     
-    setCourse({ ...course, modules: updatedModules });
+    const updatedCourse = { ...course, modules: updatedModules };
+    setCourse(updatedCourse);
+    autoSave(updatedCourse);
   };
 
   return (

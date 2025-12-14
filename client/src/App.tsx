@@ -10,8 +10,8 @@ import DashboardHome from "@/pages/dashboard";
 import CoursePlayer from "@/pages/course";
 import CommunityPage from "@/pages/community";
 import AdminDashboard from "@/pages/admin";
-
 import AdminCourseEditor from "@/pages/admin-course-edit";
+import ProfilePage from "@/pages/profile";
 
 function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType, adminOnly?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -57,6 +57,10 @@ function Router() {
 
       <Route path="/community">
         <ProtectedRoute component={CommunityPage} />
+      </Route>
+
+      <Route path="/profile">
+        <ProtectedRoute component={ProfilePage} />
       </Route>
 
       <Route path="/admin">

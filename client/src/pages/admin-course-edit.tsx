@@ -274,23 +274,43 @@ export default function AdminCourseEditor() {
                                                     </Label>
                                                     <div className="flex gap-2">
                                                       <Input 
-                                                          type="file"
-                                                          accept="video/*"
-                                                          className="h-9 text-xs file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-                                                          onChange={(e) => {
-                                                            const file = e.target.files?.[0];
-                                                            if (file) {
-                                                              const url = URL.createObjectURL(file);
-                                                              handleUpdateLesson(module.id, lesson.id, "videoUrl", url);
-                                                              toast({ title: "Vídeo Carregado", description: "O vídeo foi carregado temporariamente para visualização." });
-                                                            }
-                                                          }}
+                                                          value={lesson.videoUrl}
+                                                          onChange={(e) => handleUpdateLesson(module.id, lesson.id, "videoUrl", e.target.value)}
+                                                          placeholder="Cole URL ou envie arquivo ->"
+                                                          className="h-9 text-xs"
                                                       />
+                                                      <div className="relative">
+                                                        <Input 
+                                                            type="file"
+                                                            accept="video/*"
+                                                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                                            onChange={(e) => {
+                                                              const file = e.target.files?.[0];
+                                                              if (file) {
+                                                                const url = URL.createObjectURL(file);
+                                                                handleUpdateLesson(module.id, lesson.id, "videoUrl", url);
+                                                                toast({ title: "Vídeo Carregado", description: "O vídeo foi carregado temporariamente para visualização." });
+                                                              }
+                                                            }}
+                                                        />
+                                                        <Button variant="outline" size="icon" className="h-9 w-9">
+                                                            <Plus className="h-4 w-4" />
+                                                        </Button>
+                                                      </div>
                                                     </div>
                                                     {lesson.videoUrl && (
-                                                      <p className="text-[10px] text-muted-foreground truncate">
-                                                        Atual: {lesson.videoUrl}
-                                                      </p>
+                                                        <div className="mt-2 rounded-md overflow-hidden border bg-black/5 h-20 w-32 relative group">
+                                                            {lesson.videoUrl.includes("http") && !lesson.videoUrl.startsWith("blob:") ? (
+                                                                <div className="w-full h-full flex items-center justify-center bg-muted text-[10px] text-muted-foreground p-2 text-center">
+                                                                    Link Externo
+                                                                </div>
+                                                            ) : (
+                                                                <video src={lesson.videoUrl} className="w-full h-full object-cover" />
+                                                            )}
+                                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                                <a href={lesson.videoUrl} target="_blank" rel="noopener noreferrer" className="text-white text-xs hover:underline">Ver</a>
+                                                            </div>
+                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="space-y-2">

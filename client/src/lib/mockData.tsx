@@ -44,7 +44,38 @@ export type Enrollment = {
   completedLessons: string[]; // Array of lesson IDs
 };
 
+export type CommunityVideo = {
+  id: string;
+  title: string;
+  description: string;
+  videoUrl: string;
+  thumbnail?: string;
+  authorName: string;
+  authorAvatar?: string;
+  createdAt: string;
+};
+
 // --- Mock Data ---
+
+const INITIAL_COMMUNITY_VIDEOS: CommunityVideo[] = [
+  {
+    id: "v1",
+    title: "Minha Jornada no Marketing",
+    description: "Como apliquei as técnicas do curso e tripliquei minhas vendas em 3 meses.",
+    videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    authorName: "Maria Silva",
+    authorAvatar: "https://github.com/shadcn.png",
+    createdAt: "2023-10-15T10:00:00Z"
+  },
+  {
+    id: "v2",
+    title: "Dica de Produtividade",
+    description: "Uma técnica simples que aprendi no módulo 2 e mudou meu dia a dia.",
+    videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    authorName: "João Pedro",
+    createdAt: "2023-10-20T14:30:00Z"
+  }
+];
 
 const INITIAL_COURSES: Course[] = [
   {
@@ -126,6 +157,10 @@ type AppContextType = {
   deleteCourse: (id: string) => void;
   markLessonComplete: (courseId: string, lessonId: string) => void;
   simulateWebhook: (email: string, courseId: string) => void;
+  communityVideos: CommunityVideo[];
+  addCommunityVideo: (video: CommunityVideo) => void;
+  deleteCommunityVideo: (id: string) => void;
+  updateCommunityVideo: (video: CommunityVideo) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -134,6 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [communityVideos, setCommunityVideos] = useState<CommunityVideo[]>(INITIAL_COMMUNITY_VIDEOS);
   const { toast } = useToast();
 
   const login = (email: string, role: "user" | "admin" = "user") => {
@@ -209,6 +245,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     toast({ title: "Webhook Received", description: `Access granted to course ${courseId} for ${email}` });
   };
 
+  const addCommunityVideo = (video: CommunityVideo) => {
+    setCommunityVideos(prev => [video, ...prev]);
+    toast({ title: "Vídeo Adicionado", description: "O vídeo foi publicado na comunidade." });
+  };
+
+  const deleteCommunityVideo = (id: string) => {
+    setCommunityVideos(prev => prev.filter(v => v.id !== id));
+    toast({ title: "Vídeo Removido", description: "O vídeo foi removido da comunidade." });
+  };
+
+  const updateCommunityVideo = (video: CommunityVideo) => {
+    setCommunityVideos(prev => prev.map(v => v.id === video.id ? video : v));
+    toast({ title: "Vídeo Atualizado", description: "As alterações foram salvas." });
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -222,6 +273,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         deleteCourse,
         markLessonComplete,
         simulateWebhook,
+        communityVideos,
+        addCommunityVideo,
+        deleteCommunityVideo,
+        updateCommunityVideo
       }}
     >
       {children}

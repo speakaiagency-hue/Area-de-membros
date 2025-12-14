@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
 import DashboardHome from "@/pages/dashboard";
 import CoursePlayer from "@/pages/course";
+import CommunityPage from "@/pages/community";
 import AdminDashboard from "@/pages/admin";
 
 import AdminCourseEditor from "@/pages/admin-course-edit";
@@ -36,6 +37,10 @@ function Router() {
 
       <Route path="/course/:id">
         <ProtectedRoute component={CoursePlayer} />
+      </Route>
+
+      <Route path="/community">
+        <ProtectedRoute component={CommunityPage} />
       </Route>
 
       <Route path="/admin">

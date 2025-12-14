@@ -10,7 +10,8 @@ import {
   X,
   User as UserIcon,
   ShieldCheck,
-  ExternalLink
+  ExternalLink,
+  Video
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -35,6 +36,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const navigation = [
     { name: "Meus Cursos", href: "/", icon: BookOpen },
+    { name: "Comunidade", href: "/community", icon: Video },
     ...(isAdmin ? [{ name: "Administração", href: "/admin", icon: ShieldCheck }] : []),
     { name: "Perfil", href: "/profile", icon: UserIcon },
   ];

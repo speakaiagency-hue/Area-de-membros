@@ -54,11 +54,11 @@ export default function CoursePlayer() {
           <span className="font-medium text-foreground">{course.title}</span>
         </div>
 
-        <div className="flex gap-6 h-[calc(100vh-theme(spacing.32))] min-h-0 flex-col lg:flex-row overflow-hidden">
+        <div className="flex gap-6 lg:h-[calc(100vh-theme(spacing.32))] lg:min-h-0 flex-col lg:flex-row lg:overflow-hidden h-auto">
           {/* Main Content Area - Left Column */}
-          <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-            {/* Video Player Container - Flexible height */}
-            <div className="flex-1 bg-black rounded-xl overflow-hidden shadow-2xl relative group flex items-center justify-center min-h-0">
+          <div className="flex-1 flex flex-col min-w-0 lg:h-full h-auto lg:overflow-hidden">
+            {/* Video Player Container - Flexible height on desktop, aspect ratio on mobile */}
+            <div className="lg:flex-1 w-full aspect-video lg:aspect-auto bg-black rounded-xl overflow-hidden shadow-2xl relative group flex items-center justify-center lg:min-h-0">
               {activeLesson ? (
                 activeLesson.videoUrl.includes("embed") || activeLesson.videoUrl.includes("youtube") ? (
                   <iframe 
@@ -132,7 +132,7 @@ export default function CoursePlayer() {
           </div>
 
           {/* Sidebar Playlist - Right Column */}
-          <div className="lg:w-80 shrink-0 bg-card border rounded-xl overflow-hidden flex flex-col h-full shadow-sm">
+          <div className="lg:w-80 shrink-0 bg-card border rounded-xl overflow-hidden flex flex-col lg:h-full h-[500px] shadow-sm">
             <div className="p-4 border-b bg-muted/30">
               <h3 className="font-semibold">Conteúdo do Curso</h3>
               <div className="text-xs text-muted-foreground mt-1">

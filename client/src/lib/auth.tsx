@@ -6,6 +6,7 @@ type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  error: Error | null;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: user || null,
         isLoading,
         isAuthenticated: !!user && !error,
+        error: error ?? null,
       }}
     >
       {children}

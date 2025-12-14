@@ -100,7 +100,7 @@ const INITIAL_COURSES: Course[] = [
 const MOCK_ADMIN: User = {
   id: "admin1",
   name: "Admin User",
-  email: "admin@example.com",
+  email: "speakai.agency@gmail.com",
   role: "admin",
   avatar: "https://github.com/shadcn.png",
 };

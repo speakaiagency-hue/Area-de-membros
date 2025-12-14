@@ -30,7 +30,10 @@ export default function AuthPage() {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Simple mock auth logic
-    if (email.includes("admin")) {
+    // Specific check for the requested admin credentials
+    if (email === "speakai.agency@gmail.com" && password === "Diamante2019@") {
+      login(email, "admin");
+    } else if (email.includes("admin") && password === "admin") { // Fallback dev admin
       login(email, "admin");
     } else {
       login(email, "user");

@@ -131,7 +131,6 @@ export default function AdminCourseEditor() {
     const newLesson = {
       title: "Nova Aula",
       videoUrl: "",
-      duration: "00:00",
       order: module.lessons.length
     };
     const updatedModules = [...course.modules];
@@ -205,23 +204,14 @@ export default function AdminCourseEditor() {
                 </Button>
               </a>
             </Link>
-                        <Button 
-              onClick={handleSaveCourse} 
-              className="gap-2" 
-              data-testid="button-save" 
-              disabled={updateCourseMutation.isPending}
-            >
-              {updateCourseMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
+            <Button onClick={handleSaveCourse} className="gap-2" data-testid="button-save" disabled={updateCourseMutation.isPending}>
+              {updateCourseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Salvar Alterações
             </Button>
           </div>
         </div>
 
-        <Tabs defaultValue="content" className="w-full">
+               <Tabs defaultValue="content" className="w-full">
           <TabsList className="w-full max-w-md grid grid-cols-2">
             <TabsTrigger value="details" data-testid="tab-details">Detalhes do Curso</TabsTrigger>
             <TabsTrigger value="content" data-testid="tab-content">Conteúdo (Aulas)</TabsTrigger>
@@ -333,7 +323,7 @@ export default function AdminCourseEditor() {
                                 <Input
                                   value={lesson.videoUrl}
                                   onChange={(e) => handleUpdateLesson(moduleIndex, lessonIndex, "videoUrl", e.target.value)}
-                                  placeholder="Cole a URL do vídeo hospedado (WordPress)"
+                                  placeholder="Cole a URL do vídeo hospedado (WordPress ou YouTube)"
                                   data-testid={`input-lesson-video-${moduleIndex}-${lessonIndex}`}
                                 />
                                 {lesson.videoUrl && (
@@ -341,15 +331,13 @@ export default function AdminCourseEditor() {
                                     src={lesson.videoUrl} 
                                     controls 
                                     className="mt-2 w-full rounded-md border"
+                                    onLoadedMetadata={(e) => {
+                                      const durationInSeconds = e.currentTarget.duration;
+                                      handleUpdateLesson(moduleIndex, lessonIndex, "duration", durationInSeconds.toString());
+                                    }}
                                   />
                                 )}
                               </div>
-                              <Input
-                                value={lesson.duration}
-                                onChange={(e) => handleUpdateLesson(moduleIndex, lessonIndex, "duration", e.target.value)}
-                                placeholder="Duração"
-                                data-testid={`input-lesson-duration-${moduleIndex}-${lessonIndex}`}
-                              />
                             </div>
                             <Button 
                               onClick={() => handleDeleteLesson(moduleIndex, lessonIndex)} 
@@ -382,3 +370,4 @@ export default function AdminCourseEditor() {
     </DashboardLayout>
   );
 }
+="w-full max-w-md grid grid

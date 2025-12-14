@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import pg from "pg";
-import cors from "cors"; // <-- adicionar
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -37,7 +37,10 @@ app.use(express.urlencoded({ extended: false }));
 // ✅ CORS: permitir frontend acessar backend com cookies
 app.use(
   cors({
-    origin: "https://area-de-membros-niuz.onrender.com", // ou o domínio do frontend
+    origin: [
+      "http://localhost:5173", // quando rodar local
+      "https://area-de-membros-niuz.onrender.com" // quando rodar no Render
+    ],
     credentials: true,
   }),
 );
@@ -56,7 +59,7 @@ app.use(
     cookie: {
       secure: process.env.NODE_ENV === "production", // HTTPS no Render
       httpOnly: true,
-      sameSite: "none", // <-- necessário para cookies cross-domain
+      sameSite: "none", // necessário para cookies cross-domain
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 dias
     },
   }),

@@ -1,129 +1,173 @@
 import { useState, useEffect } from "react";
 import { useRoute, Link, useLocation } from "wouter";
-import { useApp, Course, Module, Lesson } from "@/lib/mockData";
+import { useAuth } from "@/lib/auth";
+import { useCourses, useUpdateCourse, useCreateModule, useUpdateModule, useDeleteModule, useCreateLesson, useUpdateLesson, useDeleteLesson } from "@/lib/api";
+import type { Course, Module, Lesson } from "@shared/schema";
 import { DashboardLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { 
   ChevronLeft, 
   Plus, 
   Trash, 
   Video, 
   FileText, 
-  GripVertical, 
   Save, 
-  Eye
+  Eye,
+  Loader2
 } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+
+type CourseWithModulesAndLessons = Course & {
+  modules: (Module & { lessons: Lesson[] })[];
+};
 
 export default function AdminCourseEditor() {
   const [, params] = useRoute("/admin/course/:id");
   const [, setLocation] = useLocation();
-  const { courses, updateCourse, user } = useApp();
+  const { user } = useAuth();
+  const { data: coursesData, isLoading: coursesLoading } = useCourses();
+  const updateCourseMutation = useUpdateCourse();
+  const createModuleMutation = useCreateModule();
+  const updateModuleMutation = useUpdateModule();
+  const deleteModuleMutation = useDeleteModule();
+  const createLessonMutation = useCreateLesson();
+  const updateLessonMutation = useUpdateLesson();
+  const deleteLessonMutation = useDeleteLesson();
   const { toast } = useToast();
   
-  const [course, setCourse] = useState<Course | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [course, setCourse] = useState<CourseWithModulesAndLessons | null>(null);
 
-  // Load course data
   useEffect(() => {
-    const foundCourse = courses.find(c => c.id === params?.id);
-    if (foundCourse) {
-      setCourse(JSON.parse(JSON.stringify(foundCourse))); // Deep copy to avoid mutating context directly
+    if (coursesData && params?.id) {
+      const foundCourse = coursesData.find(c => c.id === params.id);
+      if (foundCourse) {
+        setCourse(foundCourse);
+      }
     }
-    setIsLoading(false);
-  }, [courses, params?.id]);
+  }, [coursesData, params?.id]);
 
   if (!user || user.role !== "admin") {
     return <div>Access Denied</div>;
   }
 
-  if (isLoading) return <div>Loading...</div>;
-  if (!course) return <div>Course not found</div>;
+  if (coursesLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
-  const handleSave = () => {
-    updateCourse(course);
-    // Optionally redirect or just show success
+  if (!course) {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-10">
+          <p className="text-muted-foreground">Curso não encontrado</p>
+          <Link href="/admin">
+            <Button className="mt-4">Voltar para Administração</Button>
+          </Link>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const handleSaveCourse = () => {
+    updateCourseMutation.mutate(
+      { id: course.id, data: { title: course.title, description: course.description, coverImage: course.coverImage, author: course.author } },
+      {
+        onSuccess: () => {
+          toast({ title: "Sucesso", description: "Curso atualizado com sucesso!" });
+        },
+        onError: () => {
+          toast({ title: "Erro", description: "Falha ao atualizar curso", variant: "destructive" });
+        }
+      }
+    );
   };
 
   const handleAddModule = () => {
-    const newModule: Module = {
-      id: `m${Date.now()}`,
-      title: "Novo Módulo",
-      lessons: []
-    };
-    setCourse({
-      ...course,
-      modules: [...course.modules, newModule]
-    });
+    const moduleOrder = course.modules.length;
+    createModuleMutation.mutate(
+      { courseId: course.id, title: "Novo Módulo", order: moduleOrder },
+      {
+        onSuccess: () => {
+          toast({ title: "Sucesso", description: "Módulo criado com sucesso!" });
+        },
+        onError: () => {
+          toast({ title: "Erro", description: "Falha ao criar módulo", variant: "destructive" });
+        }
+      }
+    );
   };
 
   const handleDeleteModule = (moduleId: string) => {
     if (confirm("Tem certeza que deseja excluir este módulo e todas as suas aulas?")) {
-      setCourse({
-        ...course,
-        modules: course.modules.filter(m => m.id !== moduleId)
+      deleteModuleMutation.mutate(moduleId, {
+        onSuccess: () => {
+          toast({ title: "Sucesso", description: "Módulo excluído com sucesso!" });
+        },
+        onError: () => {
+          toast({ title: "Erro", description: "Falha ao excluir módulo", variant: "destructive" });
+        }
       });
     }
   };
 
   const handleUpdateModuleTitle = (moduleId: string, newTitle: string) => {
-    setCourse({
-      ...course,
-      modules: course.modules.map(m => m.id === moduleId ? { ...m, title: newTitle } : m)
-    });
+    const module = course.modules.find(m => m.id === moduleId);
+    if (!module) return;
+    
+    updateModuleMutation.mutate({ id: moduleId, data: { title: newTitle, courseId: module.courseId, order: module.order } });
   };
 
   const handleAddLesson = (moduleId: string) => {
-    const newLesson: Lesson = {
-      id: `l${Date.now()}`,
-      title: "Nova Aula",
-      videoUrl: "",
-      duration: "00:00"
+    const module = course.modules.find(m => m.id === moduleId);
+    if (!module) return;
+    
+    const lessonOrder = module.lessons.length;
+    createLessonMutation.mutate(
+      { moduleId, title: "Nova Aula", videoUrl: "", duration: "00:00", order: lessonOrder },
+      {
+        onSuccess: () => {
+          toast({ title: "Sucesso", description: "Aula criada com sucesso!" });
+        },
+        onError: () => {
+          toast({ title: "Erro", description: "Falha ao criar aula", variant: "destructive" });
+        }
+      }
+    );
+  };
+
+  const handleDeleteLesson = (lessonId: string) => {
+    deleteLessonMutation.mutate(lessonId, {
+      onSuccess: () => {
+        toast({ title: "Sucesso", description: "Aula excluída com sucesso!" });
+      },
+      onError: () => {
+        toast({ title: "Erro", description: "Falha ao excluir aula", variant: "destructive" });
+      }
+    });
+  };
+
+  const handleUpdateLesson = (lesson: Lesson, field: keyof Lesson, value: string) => {
+    const updateData = {
+      moduleId: lesson.moduleId,
+      title: lesson.title,
+      videoUrl: lesson.videoUrl,
+      duration: lesson.duration,
+      order: lesson.order,
+      pdfUrl: lesson.pdfUrl,
+      [field]: value
     };
     
-    setCourse({
-      ...course,
-      modules: course.modules.map(m => {
-        if (m.id === moduleId) {
-          return { ...m, lessons: [...m.lessons, newLesson] };
-        }
-        return m;
-      })
-    });
-  };
-
-  const handleDeleteLesson = (moduleId: string, lessonId: string) => {
-    setCourse({
-      ...course,
-      modules: course.modules.map(m => {
-        if (m.id === moduleId) {
-          return { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) };
-        }
-        return m;
-      })
-    });
-  };
-
-  const handleUpdateLesson = (moduleId: string, lessonId: string, field: keyof Lesson, value: string) => {
-    setCourse({
-      ...course,
-      modules: course.modules.map(m => {
-        if (m.id === moduleId) {
-          return {
-            ...m,
-            lessons: m.lessons.map(l => l.id === lessonId ? { ...l, [field]: value } : l)
-          };
-        }
-        return m;
-      })
-    });
+    updateLessonMutation.mutate({ id: lesson.id, data: updateData });
   };
 
   return (
@@ -132,26 +176,26 @@ export default function AdminCourseEditor() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link href="/admin">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" data-testid="button-back">
                 <ChevronLeft className="h-5 w-5" />
               </Button>
             </Link>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Editar Curso</h1>
-              <p className="text-muted-foreground text-sm">{course.title}</p>
+              <p className="text-muted-foreground text-sm" data-testid="text-course-title">{course.title}</p>
             </div>
           </div>
           <div className="flex gap-2">
             <Link href={`/course/${course.id}`}>
               <a target="_blank">
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2" data-testid="button-preview">
                     <Eye className="h-4 w-4" />
                     Visualizar
                 </Button>
               </a>
             </Link>
-            <Button onClick={handleSave} className="gap-2">
-              <Save className="h-4 w-4" />
+            <Button onClick={handleSaveCourse} className="gap-2" data-testid="button-save" disabled={updateCourseMutation.isPending}>
+              {updateCourseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Salvar Alterações
             </Button>
           </div>
@@ -159,8 +203,8 @@ export default function AdminCourseEditor() {
 
         <Tabs defaultValue="content" className="w-full">
           <TabsList className="w-full max-w-md grid grid-cols-2">
-            <TabsTrigger value="details">Detalhes do Curso</TabsTrigger>
-            <TabsTrigger value="content">Conteúdo (Aulas)</TabsTrigger>
+            <TabsTrigger value="details" data-testid="tab-details">Detalhes do Curso</TabsTrigger>
+            <TabsTrigger value="content" data-testid="tab-content">Conteúdo (Aulas)</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="mt-6 space-y-6">
@@ -174,7 +218,8 @@ export default function AdminCourseEditor() {
                   <Label>Título do Curso</Label>
                   <Input 
                     value={course.title} 
-                    onChange={(e) => setCourse({ ...course, title: e.target.value })} 
+                    onChange={(e) => setCourse({ ...course, title: e.target.value })}
+                    data-testid="input-course-title"
                   />
                 </div>
                 <div className="space-y-2">
@@ -183,6 +228,7 @@ export default function AdminCourseEditor() {
                     value={course.description} 
                     onChange={(e) => setCourse({ ...course, description: e.target.value })}
                     rows={4}
+                    data-testid="input-course-description"
                   />
                 </div>
                 <div className="space-y-2">
@@ -191,7 +237,8 @@ export default function AdminCourseEditor() {
                     <div className="flex-1">
                       <Input 
                         value={course.coverImage} 
-                        onChange={(e) => setCourse({ ...course, coverImage: e.target.value })} 
+                        onChange={(e) => setCourse({ ...course, coverImage: e.target.value })}
+                        data-testid="input-course-cover"
                       />
                       <p className="text-xs text-muted-foreground mt-1">Cole a URL de uma imagem hospedada.</p>
                     </div>
@@ -207,8 +254,9 @@ export default function AdminCourseEditor() {
           <TabsContent value="content" className="mt-6 space-y-6">
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Estrutura do Curso</h3>
-                <Button onClick={handleAddModule} variant="secondary" className="gap-2">
-                    <Plus className="h-4 w-4" /> Adicionar Módulo
+                <Button onClick={handleAddModule} variant="secondary" className="gap-2" data-testid="button-add-module" disabled={createModuleMutation.isPending}>
+                    {createModuleMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    Adicionar Módulo
                 </Button>
             </div>
 
@@ -219,7 +267,7 @@ export default function AdminCourseEditor() {
             ) : (
                 <div className="space-y-4">
                     {course.modules.map((module, index) => (
-                        <Card key={module.id} className="border-l-4 border-l-primary/50">
+                        <Card key={module.id} className="border-l-4 border-l-primary/50" data-testid={`card-module-${module.id}`}>
                             <CardHeader className="py-4 bg-muted/20 flex flex-row items-center justify-between space-y-0">
                                 <div className="flex items-center gap-3 flex-1">
                                     <div className="bg-primary/10 text-primary h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">
@@ -229,10 +277,11 @@ export default function AdminCourseEditor() {
                                         value={module.title}
                                         onChange={(e) => handleUpdateModuleTitle(module.id, e.target.value)}
                                         className="max-w-md font-medium bg-transparent border-transparent hover:border-input focus:bg-background h-9"
+                                        data-testid={`input-module-title-${module.id}`}
                                     />
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Button onClick={() => handleDeleteModule(module.id)} variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                    <Button onClick={() => handleDeleteModule(module.id)} variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" data-testid={`button-delete-module-${module.id}`}>
                                         <Trash className="h-4 w-4" />
                                     </Button>
                                 </div>
@@ -240,9 +289,9 @@ export default function AdminCourseEditor() {
                             <CardContent className="pt-4 pb-6">
                                 <div className="space-y-3 pl-4 border-l-2 border-muted ml-4">
                                     {module.lessons.map((lesson) => (
-                                        <div key={lesson.id} className="group relative grid gap-4 rounded-lg border bg-card p-4 hover:shadow-sm transition-all">
+                                        <div key={lesson.id} className="group relative grid gap-4 rounded-lg border bg-card p-4 hover:shadow-sm transition-all" data-testid={`card-lesson-${lesson.id}`}>
                                             <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button onClick={() => handleDeleteLesson(module.id, lesson.id)} variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive">
+                                                <Button onClick={() => handleDeleteLesson(lesson.id)} variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" data-testid={`button-delete-lesson-${lesson.id}`}>
                                                     <Trash className="h-3 w-3" />
                                                 </Button>
                                             </div>
@@ -252,17 +301,19 @@ export default function AdminCourseEditor() {
                                                     <Label className="text-xs text-muted-foreground">Título da Aula</Label>
                                                     <Input 
                                                         value={lesson.title}
-                                                        onChange={(e) => handleUpdateLesson(module.id, lesson.id, "title", e.target.value)}
+                                                        onChange={(e) => handleUpdateLesson(lesson, "title", e.target.value)}
                                                         className="h-8"
+                                                        data-testid={`input-lesson-title-${lesson.id}`}
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-xs text-muted-foreground">Duração</Label>
                                                     <Input 
                                                         value={lesson.duration}
-                                                        onChange={(e) => handleUpdateLesson(module.id, lesson.id, "duration", e.target.value)}
+                                                        onChange={(e) => handleUpdateLesson(lesson, "duration", e.target.value)}
                                                         className="h-8"
                                                         placeholder="00:00"
+                                                        data-testid={`input-lesson-duration-${lesson.id}`}
                                                     />
                                                 </div>
                                             </div>
@@ -275,9 +326,10 @@ export default function AdminCourseEditor() {
                                                     <div className="flex gap-2">
                                                       <Input 
                                                           value={lesson.videoUrl}
-                                                          onChange={(e) => handleUpdateLesson(module.id, lesson.id, "videoUrl", e.target.value)}
+                                                          onChange={(e) => handleUpdateLesson(lesson, "videoUrl", e.target.value)}
                                                           placeholder="Cole URL ou envie arquivo ->"
                                                           className="h-9 text-xs"
+                                                          data-testid={`input-lesson-video-${lesson.id}`}
                                                       />
                                                       <div className="relative">
                                                         <Input 
@@ -288,7 +340,7 @@ export default function AdminCourseEditor() {
                                                               const file = e.target.files?.[0];
                                                               if (file) {
                                                                 const url = URL.createObjectURL(file);
-                                                                handleUpdateLesson(module.id, lesson.id, "videoUrl", url);
+                                                                handleUpdateLesson(lesson, "videoUrl", url);
                                                                 toast({ title: "Vídeo Carregado", description: "O vídeo foi carregado temporariamente para visualização." });
                                                               }
                                                             }}
@@ -319,16 +371,17 @@ export default function AdminCourseEditor() {
                                                     </Label>
                                                     <Input 
                                                         value={lesson.pdfUrl || ""}
-                                                        onChange={(e) => handleUpdateLesson(module.id, lesson.id, "pdfUrl", e.target.value)}
+                                                        onChange={(e) => handleUpdateLesson(lesson, "pdfUrl", e.target.value)}
                                                         className="h-8 font-mono text-xs"
                                                         placeholder="https://..."
+                                                        data-testid={`input-lesson-pdf-${lesson.id}`}
                                                     />
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
                                     
-                                    <Button onClick={() => handleAddLesson(module.id)} variant="outline" size="sm" className="w-full border-dashed text-muted-foreground hover:text-primary hover:border-primary/50">
+                                    <Button onClick={() => handleAddLesson(module.id)} variant="outline" size="sm" className="w-full border-dashed text-muted-foreground hover:text-primary hover:border-primary/50" data-testid={`button-add-lesson-${module.id}`}>
                                         <Plus className="h-3 w-3 mr-2" /> Adicionar Aula
                                     </Button>
                                 </div>

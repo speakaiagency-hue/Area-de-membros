@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useApp } from "@/lib/mockData";
+import { useAuth } from "@/lib/auth";
+import { useCourses, useCreateCourse, useDeleteCourse, useSimulateWebhook } from "@/lib/api";
 import { DashboardLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +10,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Upload, Edit, Trash, CreditCard } from "lucide-react";
+import { Plus, Upload, Edit, Trash, CreditCard, Loader2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
-  const { user, courses, simulateWebhook, deleteCourse, addCourse } = useApp();
+  const { user } = useAuth();
+  const { data: courses, isLoading } = useCourses();
+  const createCourseMutation = useCreateCourse();
+  const deleteCourseMutation = useDeleteCourse();
+  const simulateWebhookMutation = useSimulateWebhook();
+  const { toast } = useToast();
+  
   const [webhookEmail, setWebhookEmail] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [, setLocation] = useLocation();
@@ -34,38 +42,71 @@ export default function AdminDashboard() {
     );
   }
 
-  const handleSimulateWebhook = () => {
+  const handleSimulateWebhook = async () => {
     if (webhookEmail && selectedCourseId) {
-      simulateWebhook(webhookEmail, selectedCourseId);
-      setWebhookEmail("");
+      try {
+        await simulateWebhookMutation.mutateAsync({ email: webhookEmail, courseId: selectedCourseId });
+        toast({
+          title: "Webhook Recebido",
+          description: `Acesso concedido para ${webhookEmail}`,
+        });
+        setWebhookEmail("");
+      } catch (error: any) {
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao processar webhook",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const handleDeleteCourse = (id: string, title: string) => {
+  const handleDeleteCourse = async (id: string, title: string) => {
     if (confirm(`Tem certeza que deseja excluir o curso "${title}"? Esta ação não pode ser desfeita.`)) {
-      deleteCourse(id);
+      try {
+        await deleteCourseMutation.mutateAsync(id);
+        toast({
+          title: "Sucesso",
+          description: "Curso excluído com sucesso.",
+        });
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível excluir o curso.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const handleCreateCourse = () => {
+  const handleCreateCourse = async () => {
     if (!newCourseTitle) return;
 
-    const newCourse = {
-      id: `c${Date.now()}`,
-      title: newCourseTitle,
-      description: newCourseDesc || "Sem descrição",
-      coverImage: "https://placehold.co/600x400/2563eb/white?text=Nova+Capa", // Placeholder
-      author: user.name,
-      modules: []
-    };
-
-    addCourse(newCourse);
-    setIsNewCourseOpen(false);
-    setNewCourseTitle("");
-    setNewCourseDesc("");
-    
-    // Optional: Redirect to edit immediately
-    setLocation(`/admin/course/${newCourse.id}`);
+    try {
+      const result = await createCourseMutation.mutateAsync({
+        title: newCourseTitle,
+        description: newCourseDesc || "Sem descrição",
+        coverImage: "https://placehold.co/600x400/2563eb/white?text=Nova+Capa",
+        author: user?.name || "Admin",
+      });
+      
+      toast({
+        title: "Sucesso",
+        description: "Novo curso criado.",
+      });
+      
+      setIsNewCourseOpen(false);
+      setNewCourseTitle("");
+      setNewCourseDesc("");
+      
+      setLocation(`/admin/course/${result.id}`);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar o curso.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -131,7 +172,7 @@ export default function AdminDashboard() {
                 <CardDescription>Gerencie o conteúdo visível para seus alunos.</CardDescription>
               </CardHeader>
               <CardContent>
-                {courses.length === 0 ? (
+                {!courses || courses.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     Nenhum curso cadastrado.
                   </div>

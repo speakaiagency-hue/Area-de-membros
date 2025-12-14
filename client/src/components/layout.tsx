@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useApp } from "@/lib/mockData";
+import { useAuth } from "@/lib/auth";
+import { useLogout } from "@/lib/api";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -26,7 +27,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useApp();
+  const { user } = useAuth();
+  const logoutMutation = useLogout();
   const [location] = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -98,7 +100,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <span className="truncate text-sm font-medium text-sidebar-foreground">{user.name}</span>
             <span className="truncate text-xs text-sidebar-foreground/60">{user.email}</span>
           </div>
-          <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground" onClick={logout}>
+          <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground" onClick={() => logoutMutation.mutate()}>
             <LogOut className="h-4 w-4" />
           </Button>
         </div>

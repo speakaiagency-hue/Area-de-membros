@@ -115,13 +115,6 @@ export default function AdminCourseEditor() {
     });
     
     toast({ title: "Módulo adicionado", description: "Clique em 'Salvar Curso' para confirmar" });
-          toast({ title: "Sucesso", description: "Módulo criado com sucesso!" });
-        },
-        onError: () => {
-          toast({ title: "Erro", description: "Falha ao criar módulo", variant: "destructive" });
-        }
-      }
-    );
   };
 
   const handleDeleteModule = (moduleIndex: number) => {

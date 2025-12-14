@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import pg from "pg";
+import cors from "cors"; // <-- adicionar
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -33,7 +34,15 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
-// Session configuration with PostgreSQL store
+// ✅ CORS: permitir frontend acessar backend com cookies
+app.use(
+  cors({
+    origin: "https://area-de-membros-niuz.onrender.com", // ou o domínio do frontend
+    credentials: true,
+  }),
+);
+
+// ✅ Session configuration with PostgreSQL store
 app.use(
   session({
     store: new PgSession({
@@ -45,9 +54,10 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production", // HTTPS no Render
       httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      sameSite: "none", // <-- necessário para cookies cross-domain
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 dias
     },
   }),
 );

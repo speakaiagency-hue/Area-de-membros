@@ -228,6 +228,96 @@ export function useCompleteLesson() {
   });
 }
 
+// Module hooks
+export function useCreateModule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (module: { courseId: string; title: string; order: number }) => {
+      return fetchWithCredentials("/api/modules", {
+        method: "POST",
+        body: JSON.stringify(module),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+export function useUpdateModule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { courseId: string; title: string; order: number } }) => {
+      return fetchWithCredentials(`/api/modules/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+export function useDeleteModule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return fetchWithCredentials(`/api/modules/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+// Lesson hooks
+export function useCreateLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (lesson: { moduleId: string; title: string; videoUrl: string; duration: string; order: number; pdfUrl?: string }) => {
+      return fetchWithCredentials("/api/lessons", {
+        method: "POST",
+        body: JSON.stringify(lesson),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+export function useUpdateLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { moduleId: string; title: string; videoUrl: string; duration: string; order: number; pdfUrl?: string } }) => {
+      return fetchWithCredentials(`/api/lessons/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+export function useDeleteLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return fetchWithCredentials(`/api/lessons/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
 // Webhook simulation (admin only)
 export function useSimulateWebhook() {
   const queryClient = useQueryClient();

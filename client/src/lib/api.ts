@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { User, Course, Module, Lesson, CommunityVideo, Enrollment } from "@shared/schema";
 
-const API_URL = "";
+const API_URL = "https://area-de-membros-niuz.onrender.com";
 
 // Type for Course with modules and lessons
 export type CourseWithContent = Course & {
@@ -323,7 +323,7 @@ export function useSimulateWebhook() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ email, courseId }: { email: string; courseId: string }) => {
-      return fetchWithCredentials("/api/webhook/kiwifi", {
+      return fetchWithCredentials("/api/webhook/kiwify", {
         method: "POST",
         body: JSON.stringify({ email, courseId }),
       });

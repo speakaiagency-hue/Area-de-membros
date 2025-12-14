@@ -270,14 +270,28 @@ export default function AdminCourseEditor() {
                                             <div className="grid gap-4 md:grid-cols-2">
                                                 <div className="space-y-2">
                                                     <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                                                        <Video className="h-3 w-3" /> URL do Vídeo (Embed)
+                                                        <Video className="h-3 w-3" /> Arquivo de Vídeo
                                                     </Label>
-                                                    <Input 
-                                                        value={lesson.videoUrl}
-                                                        onChange={(e) => handleUpdateLesson(module.id, lesson.id, "videoUrl", e.target.value)}
-                                                        className="h-8 font-mono text-xs"
-                                                        placeholder="https://youtube.com/embed/..."
-                                                    />
+                                                    <div className="flex gap-2">
+                                                      <Input 
+                                                          type="file"
+                                                          accept="video/*"
+                                                          className="h-9 text-xs file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                                                          onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                              const url = URL.createObjectURL(file);
+                                                              handleUpdateLesson(module.id, lesson.id, "videoUrl", url);
+                                                              toast({ title: "Vídeo Carregado", description: "O vídeo foi carregado temporariamente para visualização." });
+                                                            }
+                                                          }}
+                                                      />
+                                                    </div>
+                                                    {lesson.videoUrl && (
+                                                      <p className="text-[10px] text-muted-foreground truncate">
+                                                        Atual: {lesson.videoUrl}
+                                                      </p>
+                                                    )}
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-xs text-muted-foreground flex items-center gap-1">

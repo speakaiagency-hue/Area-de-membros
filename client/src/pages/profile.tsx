@@ -57,16 +57,67 @@ export default function ProfilePage() {
                   {formData.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <Label htmlFor="avatar">URL do Avatar</Label>
-                <Input
-                  id="avatar"
-                  value={formData.avatar}
-                  onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
-                  disabled={!isEditing}
-                  placeholder="https://exemplo.com/avatar.jpg"
-                  className="mt-2"
-                />
+              <div className="flex-1 space-y-3">
+                <Label>Foto de Perfil</Label>
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Validar tamanho (max 2MB)
+                              if (file.size > 2 * 1024 * 1024) {
+                                toast({
+                                  title: "Arquivo muito grande",
+                                  description: "A imagem deve ter no máximo 2MB",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+
+                              // Validar tipo
+                              if (!file.type.startsWith('image/')) {
+                                toast({
+                                  title: "Formato inválido",
+                                  description: "Por favor, selecione uma imagem",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+
+                              // Criar preview
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setFormData({ ...formData, avatar: reader.result as string });
+                                toast({
+                                  title: "Imagem carregada",
+                                  description: "Clique em 'Salvar' para confirmar"
+                                });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        <Button variant="outline" className="w-full">
+                          <User className="h-4 w-4 mr-2" />
+                          Escolher Imagem
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Formatos aceitos: JPG, PNG, GIF (máx. 2MB)
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Clique em "Editar Perfil" para alterar sua foto
+                  </p>
+                )}
               </div>
             </div>
 

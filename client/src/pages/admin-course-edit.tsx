@@ -79,8 +79,18 @@ export default function AdminCourseEditor() {
   }
 
   const handleSaveCourse = () => {
+    // Salvar curso completo com módulos e aulas
     updateCourseMutation.mutate(
-      { id: course.id, data: { title: course.title, description: course.description, coverImage: course.coverImage, author: course.author } },
+      { 
+        id: course.id, 
+        data: { 
+          title: course.title, 
+          description: course.description, 
+          coverImage: course.coverImage, 
+          author: course.author,
+          modules: course.modules 
+        } 
+      },
       {
         onSuccess: () => {
           toast({ title: "Sucesso", description: "Curso atualizado com sucesso!" });
@@ -93,11 +103,18 @@ export default function AdminCourseEditor() {
   };
 
   const handleAddModule = () => {
-    const moduleOrder = course.modules.length;
-    createModuleMutation.mutate(
-      { courseId: course.id, title: "Novo Módulo", order: moduleOrder },
-      {
-        onSuccess: () => {
+    const newModule = {
+      title: "Novo Módulo",
+      order: course.modules.length,
+      lessons: []
+    };
+    
+    setCourse({
+      ...course,
+      modules: [...course.modules, newModule as any]
+    });
+    
+    toast({ title: "Módulo adicionado", description: "Clique em 'Salvar Curso' para confirmar" });
           toast({ title: "Sucesso", description: "Módulo criado com sucesso!" });
         },
         onError: () => {
@@ -107,67 +124,59 @@ export default function AdminCourseEditor() {
     );
   };
 
-  const handleDeleteModule = (moduleId: string) => {
+  const handleDeleteModule = (moduleIndex: number) => {
     if (confirm("Tem certeza que deseja excluir este módulo e todas as suas aulas?")) {
-      deleteModuleMutation.mutate(moduleId, {
-        onSuccess: () => {
-          toast({ title: "Sucesso", description: "Módulo excluído com sucesso!" });
-        },
-        onError: () => {
-          toast({ title: "Erro", description: "Falha ao excluir módulo", variant: "destructive" });
-        }
-      });
+      const updatedModules = course.modules.filter((_, index) => index !== moduleIndex);
+      setCourse({ ...course, modules: updatedModules });
+      toast({ title: "Módulo removido", description: "Clique em 'Salvar Curso' para confirmar" });
     }
   };
 
-  const handleUpdateModuleTitle = (moduleId: string, newTitle: string) => {
-    const module = course.modules.find(m => m.id === moduleId);
-    if (!module) return;
-    
-    updateModuleMutation.mutate({ id: moduleId, data: { title: newTitle, courseId: module.courseId, order: module.order } });
+  const handleUpdateModuleTitle = (moduleIndex: number, newTitle: string) => {
+    const updatedModules = [...course.modules];
+    updatedModules[moduleIndex] = { ...updatedModules[moduleIndex], title: newTitle };
+    setCourse({ ...course, modules: updatedModules });
   };
 
-  const handleAddLesson = (moduleId: string) => {
-    const module = course.modules.find(m => m.id === moduleId);
-    if (!module) return;
-    
-    const lessonOrder = module.lessons.length;
-    createLessonMutation.mutate(
-      { moduleId, title: "Nova Aula", videoUrl: "", duration: "00:00", order: lessonOrder },
-      {
-        onSuccess: () => {
-          toast({ title: "Sucesso", description: "Aula criada com sucesso!" });
-        },
-        onError: () => {
-          toast({ title: "Erro", description: "Falha ao criar aula", variant: "destructive" });
-        }
-      }
-    );
-  };
-
-  const handleDeleteLesson = (lessonId: string) => {
-    deleteLessonMutation.mutate(lessonId, {
-      onSuccess: () => {
-        toast({ title: "Sucesso", description: "Aula excluída com sucesso!" });
-      },
-      onError: () => {
-        toast({ title: "Erro", description: "Falha ao excluir aula", variant: "destructive" });
-      }
-    });
-  };
-
-  const handleUpdateLesson = (lesson: Lesson, field: keyof Lesson, value: string) => {
-    const updateData = {
-      moduleId: lesson.moduleId,
-      title: lesson.title,
-      videoUrl: lesson.videoUrl,
-      duration: lesson.duration,
-      order: lesson.order,
-      pdfUrl: lesson.pdfUrl,
-      [field]: value
+  const handleAddLesson = (moduleIndex: number) => {
+    const newLesson = {
+      title: "Nova Aula",
+      videoUrl: "",
+      duration: "00:00",
+      order: course.modules[moduleIndex].lessons.length
     };
     
-    updateLessonMutation.mutate({ id: lesson.id, data: updateData });
+    const updatedModules = [...course.modules];
+    updatedModules[moduleIndex] = {
+      ...updatedModules[moduleIndex],
+      lessons: [...updatedModules[moduleIndex].lessons, newLesson as any]
+    };
+    
+    setCourse({ ...course, modules: updatedModules });
+    toast({ title: "Aula adicionada", description: "Clique em 'Salvar Curso' para confirmar" });
+  };
+
+  const handleDeleteLesson = (moduleIndex: number, lessonIndex: number) => {
+    const updatedModules = [...course.modules];
+    updatedModules[moduleIndex] = {
+      ...updatedModules[moduleIndex],
+      lessons: updatedModules[moduleIndex].lessons.filter((_, index) => index !== lessonIndex)
+    };
+    
+    setCourse({ ...course, modules: updatedModules });
+    toast({ title: "Aula removida", description: "Clique em 'Salvar Curso' para confirmar" });
+  };
+
+  const handleUpdateLesson = (moduleIndex: number, lessonIndex: number, field: string, value: string) => {
+    const updatedModules = [...course.modules];
+    updatedModules[moduleIndex] = {
+      ...updatedModules[moduleIndex],
+      lessons: updatedModules[moduleIndex].lessons.map((lesson, index) => 
+        index === lessonIndex ? { ...lesson, [field]: value } : lesson
+      )
+    };
+    
+    setCourse({ ...course, modules: updatedModules });
   };
 
   return (
@@ -266,32 +275,32 @@ export default function AdminCourseEditor() {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {course.modules.map((module, index) => (
-                        <Card key={module.id} className="border-l-4 border-l-primary/50" data-testid={`card-module-${module.id}`}>
+                    {course.modules.map((module, moduleIndex) => (
+                        <Card key={moduleIndex} className="border-l-4 border-l-primary/50" data-testid={`card-module-${moduleIndex}`}>
                             <CardHeader className="py-4 bg-muted/20 flex flex-row items-center justify-between space-y-0">
                                 <div className="flex items-center gap-3 flex-1">
                                     <div className="bg-primary/10 text-primary h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">
-                                        {index + 1}
+                                        {moduleIndex + 1}
                                     </div>
                                     <Input 
                                         value={module.title}
-                                        onChange={(e) => handleUpdateModuleTitle(module.id, e.target.value)}
+                                        onChange={(e) => handleUpdateModuleTitle(moduleIndex, e.target.value)}
                                         className="max-w-md font-medium bg-transparent border-transparent hover:border-input focus:bg-background h-9"
-                                        data-testid={`input-module-title-${module.id}`}
+                                        data-testid={`input-module-title-${moduleIndex}`}
                                     />
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Button onClick={() => handleDeleteModule(module.id)} variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" data-testid={`button-delete-module-${module.id}`}>
+                                    <Button onClick={() => handleDeleteModule(moduleIndex)} variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" data-testid={`button-delete-module-${moduleIndex}`}>
                                         <Trash className="h-4 w-4" />
                                     </Button>
                                 </div>
                             </CardHeader>
                             <CardContent className="pt-4 pb-6">
                                 <div className="space-y-3 pl-4 border-l-2 border-muted ml-4">
-                                    {module.lessons.map((lesson) => (
-                                        <div key={lesson.id} className="group relative grid gap-4 rounded-lg border bg-card p-4 hover:shadow-sm transition-all" data-testid={`card-lesson-${lesson.id}`}>
+                                    {module.lessons.map((lesson, lessonIndex) => (
+                                        <div key={lessonIndex} className="group relative grid gap-4 rounded-lg border bg-card p-4 hover:shadow-sm transition-all" data-testid={`card-lesson-${lessonIndex}`}>
                                             <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button onClick={() => handleDeleteLesson(lesson.id)} variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" data-testid={`button-delete-lesson-${lesson.id}`}>
+                                                <Button onClick={() => handleDeleteLesson(moduleIndex, lessonIndex)} variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" data-testid={`button-delete-lesson-${lessonIndex}`}>
                                                     <Trash className="h-3 w-3" />
                                                 </Button>
                                             </div>
@@ -301,19 +310,19 @@ export default function AdminCourseEditor() {
                                                     <Label className="text-xs text-muted-foreground">Título da Aula</Label>
                                                     <Input 
                                                         value={lesson.title}
-                                                        onChange={(e) => handleUpdateLesson(lesson, "title", e.target.value)}
+                                                        onChange={(e) => handleUpdateLesson(moduleIndex, lessonIndex, "title", e.target.value)}
                                                         className="h-8"
-                                                        data-testid={`input-lesson-title-${lesson.id}`}
+                                                        data-testid={`input-lesson-title-${lessonIndex}`}
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-xs text-muted-foreground">Duração</Label>
                                                     <Input 
                                                         value={lesson.duration}
-                                                        onChange={(e) => handleUpdateLesson(lesson, "duration", e.target.value)}
+                                                        onChange={(e) => handleUpdateLesson(moduleIndex, lessonIndex, "duration", e.target.value)}
                                                         className="h-8"
                                                         placeholder="00:00"
-                                                        data-testid={`input-lesson-duration-${lesson.id}`}
+                                                        data-testid={`input-lesson-duration-${lessonIndex}`}
                                                     />
                                                 </div>
                                             </div>
@@ -326,10 +335,10 @@ export default function AdminCourseEditor() {
                                                     <div className="flex gap-2">
                                                       <Input 
                                                           value={lesson.videoUrl}
-                                                          onChange={(e) => handleUpdateLesson(lesson, "videoUrl", e.target.value)}
+                                                          onChange={(e) => handleUpdateLesson(moduleIndex, lessonIndex, "videoUrl", e.target.value)}
                                                           placeholder="Cole URL ou envie arquivo ->"
                                                           className="h-9 text-xs"
-                                                          data-testid={`input-lesson-video-${lesson.id}`}
+                                                          data-testid={`input-lesson-video-${lessonIndex}`}
                                                       />
                                                       <div className="relative">
                                                         <Input 
@@ -340,7 +349,7 @@ export default function AdminCourseEditor() {
                                                               const file = e.target.files?.[0];
                                                               if (file) {
                                                                 const url = URL.createObjectURL(file);
-                                                                handleUpdateLesson(lesson, "videoUrl", url);
+                                                                handleUpdateLesson(moduleIndex, lessonIndex, "videoUrl", url);
                                                                 toast({ title: "Vídeo Carregado", description: "O vídeo foi carregado temporariamente para visualização." });
                                                               }
                                                             }}

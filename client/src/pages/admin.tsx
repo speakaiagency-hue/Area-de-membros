@@ -30,6 +30,7 @@ export default function AdminDashboard() {
   const [isNewCourseOpen, setIsNewCourseOpen] = useState(false);
   const [newCourseTitle, setNewCourseTitle] = useState("");
   const [newCourseDesc, setNewCourseDesc] = useState("");
+  const [newCourseCover, setNewCourseCover] = useState("https://placehold.co/600x400/2563eb/white?text=Nova+Capa");
 
   if (user?.role !== "admin") {
     return (
@@ -86,7 +87,7 @@ export default function AdminDashboard() {
       const result = await createCourseMutation.mutateAsync({
         title: newCourseTitle,
         description: newCourseDesc || "Sem descrição",
-        coverImage: "https://placehold.co/600x400/2563eb/white?text=Nova+Capa",
+        coverImage: newCourseCover,
         author: user?.name || "Admin",
       });
       
@@ -148,6 +149,52 @@ export default function AdminDashboard() {
                     value={newCourseDesc}
                     onChange={(e) => setNewCourseDesc(e.target.value)}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>Imagem de Capa</Label>
+                  <div className="space-y-3">
+                    {newCourseCover && (
+                      <div className="relative w-full h-40 rounded-lg overflow-hidden border">
+                        <img 
+                          src={newCourseCover} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="relative">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 5 * 1024 * 1024) {
+                              toast({
+                                title: "Arquivo muito grande",
+                                description: "A imagem deve ter no máximo 5MB",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setNewCourseCover(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <Button variant="outline" className="w-full" type="button">
+                        <Upload className="h-4 w-4 mr-2" />
+                        Escolher Imagem de Capa
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Recomendado: 600x400px (máx. 5MB)
+                    </p>
+                  </div>
                 </div>
               </div>
               <DialogFooter>

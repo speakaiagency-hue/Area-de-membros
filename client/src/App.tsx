@@ -3,7 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AppProvider, useApp } from "@/lib/mockData";
+import { AuthProvider, useAuth } from "@/lib/auth";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
 import DashboardHome from "@/pages/dashboard";
@@ -14,7 +14,15 @@ import AdminDashboard from "@/pages/admin";
 import AdminCourseEditor from "@/pages/admin-course-edit";
 
 function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType, adminOnly?: boolean }) {
-  const { user } = useApp();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!user) return <Redirect to="/auth" />;
   if (adminOnly && user.role !== "admin") return <Redirect to="/" />;
@@ -23,7 +31,15 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
 }
 
 function Router() {
-  const { user } = useApp();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <Switch>
@@ -61,10 +77,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AppProvider>
+        <AuthProvider>
           <Toaster />
           <Router />
-        </AppProvider>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

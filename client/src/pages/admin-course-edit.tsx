@@ -38,7 +38,6 @@ export default function AdminCourseEditor() {
     if (coursesData && params?.id) {
       const foundCourse = coursesData.find(c => c.id === params.id);
       if (foundCourse) {
-        // Normaliza módulos para garantir que sempre tenham lessons: []
         const normalizedModules = foundCourse.modules.map(m => ({
           ...m,
           lessons: m.lessons || []
@@ -77,16 +76,7 @@ export default function AdminCourseEditor() {
 
   const handleSaveCourse = (showToast = true) => {
     updateCourseMutation.mutate(
-      { 
-        id: course.id, 
-        data: { 
-          title: course.title, 
-          description: course.description, 
-          coverImage: course.coverImage, 
-          author: course.author,
-          modules: course.modules 
-        } 
-      },
+      { id: course.id, data: { ...course } },
       {
         onSuccess: () => {
           if (showToast) {
@@ -215,14 +205,23 @@ export default function AdminCourseEditor() {
                 </Button>
               </a>
             </Link>
-            <Button onClick={handleSaveCourse} className="gap-2" data-testid="button-save" disabled={updateCourseMutation.isPending}>
-              {updateCourseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        <Button 
+              onClick={handleSaveCourse} 
+              className="gap-2" 
+              data-testid="button-save" 
+              disabled={updateCourseMutation.isPending}
+            >
+              {updateCourseMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
               Salvar Alterações
             </Button>
           </div>
         </div>
 
-                <Tabs defaultValue="content" className="w-full">
+        <Tabs defaultValue="content" className="w-full">
           <TabsList className="w-full max-w-md grid grid-cols-2">
             <TabsTrigger value="details" data-testid="tab-details">Detalhes do Curso</TabsTrigger>
             <TabsTrigger value="content" data-testid="tab-content">Conteúdo (Aulas)</TabsTrigger>
@@ -323,19 +322,28 @@ export default function AdminCourseEditor() {
                       ) : (
                         (module.lessons || []).map((lesson, lessonIndex) => (
                           <div key={lessonIndex} className="flex items-center justify-between border rounded-md p-2">
-                            <div className="flex-1 space-y-1">
+                            <div className="flex-1 space-y-2">
                               <Input
                                 value={lesson.title}
                                 onChange={(e) => handleUpdateLesson(moduleIndex, lessonIndex, "title", e.target.value)}
                                 placeholder="Título da Aula"
                                 data-testid={`input-lesson-title-${moduleIndex}-${lessonIndex}`}
                               />
-                              <Input
-                                value={lesson.videoUrl}
-                                onChange={(e) => handleUpdateLesson(moduleIndex, lessonIndex, "videoUrl", e.target.value)}
-                                placeholder="URL do Vídeo"
-                                data-testid={`input-lesson-video-${moduleIndex}-${lessonIndex}`}
-                              />
+                              <div className="space-y-1">
+                                <Input
+                                  value={lesson.videoUrl}
+                                  onChange={(e) => handleUpdateLesson(moduleIndex, lessonIndex, "videoUrl", e.target.value)}
+                                  placeholder="Cole a URL do vídeo hospedado (WordPress)"
+                                  data-testid={`input-lesson-video-${moduleIndex}-${lessonIndex}`}
+                                />
+                                {lesson.videoUrl && (
+                                  <video 
+                                    src={lesson.videoUrl} 
+                                    controls 
+                                    className="mt-2 w-full rounded-md border"
+                                  />
+                                )}
+                              </div>
                               <Input
                                 value={lesson.duration}
                                 onChange={(e) => handleUpdateLesson(moduleIndex, lessonIndex, "duration", e.target.value)}

@@ -10,6 +10,8 @@ import DashboardHome from "@/pages/dashboard";
 import CoursePlayer from "@/pages/course";
 import AdminDashboard from "@/pages/admin";
 
+import AdminCourseEditor from "@/pages/admin-course-edit";
+
 function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType, adminOnly?: boolean }) {
   const { user } = useApp();
 
@@ -38,6 +40,10 @@ function Router() {
 
       <Route path="/admin">
         <ProtectedRoute component={AdminDashboard} adminOnly />
+      </Route>
+
+      <Route path="/admin/course/:id">
+        <ProtectedRoute component={AdminCourseEditor} adminOnly />
       </Route>
 
       {/* Fallback to 404 */}

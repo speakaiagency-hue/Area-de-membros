@@ -10,11 +10,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Upload, Edit, Trash, CreditCard } from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 export default function AdminDashboard() {
-  const { user, courses, simulateWebhook } = useApp();
+  const { user, courses, simulateWebhook, deleteCourse, addCourse } = useApp();
   const [webhookEmail, setWebhookEmail] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [, setLocation] = useLocation();
+
+  // New Course State
+  const [isNewCourseOpen, setIsNewCourseOpen] = useState(false);
+  const [newCourseTitle, setNewCourseTitle] = useState("");
+  const [newCourseDesc, setNewCourseDesc] = useState("");
 
   if (user?.role !== "admin") {
     return (
@@ -34,6 +41,33 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDeleteCourse = (id: string, title: string) => {
+    if (confirm(`Tem certeza que deseja excluir o curso "${title}"? Esta ação não pode ser desfeita.`)) {
+      deleteCourse(id);
+    }
+  };
+
+  const handleCreateCourse = () => {
+    if (!newCourseTitle) return;
+
+    const newCourse = {
+      id: `c${Date.now()}`,
+      title: newCourseTitle,
+      description: newCourseDesc || "Sem descrição",
+      coverImage: "https://placehold.co/600x400/2563eb/white?text=Nova+Capa", // Placeholder
+      author: user.name,
+      modules: []
+    };
+
+    addCourse(newCourse);
+    setIsNewCourseOpen(false);
+    setNewCourseTitle("");
+    setNewCourseDesc("");
+    
+    // Optional: Redirect to edit immediately
+    setLocation(`/admin/course/${newCourse.id}`);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -42,10 +76,45 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold tracking-tight">Painel Administrativo</h1>
             <p className="text-muted-foreground mt-2">Gerencie cursos, conteúdos e integrações.</p>
           </div>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Curso
-          </Button>
+          
+          <Dialog open={isNewCourseOpen} onOpenChange={setIsNewCourseOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Novo Curso
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Criar Novo Curso</DialogTitle>
+                <DialogDescription>
+                  Preencha as informações básicas. Você poderá adicionar módulos e aulas na próxima tela.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Título do Curso</Label>
+                  <Input 
+                    placeholder="Ex: Curso Completo de Design" 
+                    value={newCourseTitle}
+                    onChange={(e) => setNewCourseTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Descrição Curta</Label>
+                  <Textarea 
+                    placeholder="O que os alunos vão aprender?" 
+                    value={newCourseDesc}
+                    onChange={(e) => setNewCourseDesc(e.target.value)}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsNewCourseOpen(false)}>Cancelar</Button>
+                <Button onClick={handleCreateCourse} disabled={!newCourseTitle}>Criar Curso</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <Tabs defaultValue="courses" className="space-y-6">
@@ -62,37 +131,51 @@ export default function AdminDashboard() {
                 <CardDescription>Gerencie o conteúdo visível para seus alunos.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Capa</TableHead>
-                      <TableHead>Título</TableHead>
-                      <TableHead>Módulos</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {courses.map((course) => (
-                      <TableRow key={course.id}>
-                        <TableCell>
-                          <img src={course.coverImage} className="h-10 w-16 object-cover rounded-md" alt={course.title} />
-                        </TableCell>
-                        <TableCell className="font-medium">{course.title}</TableCell>
-                        <TableCell>{course.modules.length}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="text-destructive">
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                {courses.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nenhum curso cadastrado.
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Capa</TableHead>
+                        <TableHead>Título</TableHead>
+                        <TableHead>Módulos</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {courses.map((course) => (
+                        <TableRow key={course.id}>
+                          <TableCell>
+                            <img src={course.coverImage} className="h-10 w-16 object-cover rounded-md" alt={course.title} />
+                          </TableCell>
+                          <TableCell className="font-medium">{course.title}</TableCell>
+                          <TableCell>{course.modules.length}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Link href={`/admin/course/${course.id}`}>
+                                <Button variant="ghost" size="icon" title="Editar Conteúdo">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteCourse(course.id, course.title)}
+                                title="Excluir Curso"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

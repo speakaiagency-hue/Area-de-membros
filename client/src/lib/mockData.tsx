@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 import { useToast } from "@/hooks/use-toast";
 import cover1 from "@assets/generated_images/abstract_3d_geometric_shapes_with_blue_purple_gradient.png";
 import cover2 from "@assets/generated_images/minimalist_bright_business_workspace.png";
@@ -123,6 +123,7 @@ type AppContextType = {
   logout: () => void;
   updateCourse: (course: Course) => void;
   addCourse: (course: Course) => void;
+  deleteCourse: (id: string) => void;
   markLessonComplete: (courseId: string, lessonId: string) => void;
   simulateWebhook: (email: string, courseId: string) => void;
 };
@@ -160,6 +161,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addCourse = (newCourse: Course) => {
     setCourses((prev) => [...prev, newCourse]);
     toast({ title: "Success", description: "New course added." });
+  };
+
+  const deleteCourse = (id: string) => {
+    setCourses((prev) => prev.filter((c) => c.id !== id));
+    toast({ title: "Success", description: "Course deleted successfully." });
   };
 
   const markLessonComplete = (courseId: string, lessonId: string) => {
@@ -213,6 +219,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
         updateCourse,
         addCourse,
+        deleteCourse,
         markLessonComplete,
         simulateWebhook,
       }}

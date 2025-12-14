@@ -47,5 +47,12 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    proxy: {
+      "/api": {
+        target: "https://area-de-membros-niuz.onrender.com",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
 });

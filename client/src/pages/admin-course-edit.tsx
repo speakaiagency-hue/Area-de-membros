@@ -42,7 +42,6 @@ export default function AdminCourseEditor() {
   const { toast } = useToast();
 
   const [course, setCourse] = useState<CourseWithModulesAndLessons | null>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (coursesData && params?.id) {
@@ -85,6 +84,20 @@ export default function AdminCourseEditor() {
   }
 
   const handleSaveCourse = () => {
+    // Validação: todas as aulas precisam ter duration
+    const hasMissingDurations = course.modules.some((m) =>
+      m.lessons.some((l) => l.duration == null)
+    );
+
+    if (hasMissingDurations) {
+      toast({
+        title: "Erro",
+        description: "Espere os vídeos carregarem antes de salvar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Remover campos de data antes de enviar
     const sanitizedCourse = {
       id: course.id,
@@ -101,7 +114,7 @@ export default function AdminCourseEditor() {
           title: l.title,
           videoUrl: l.videoUrl,
           order: l.order,
-          duration: l.duration, // calculado automaticamente
+          duration: l.duration,
         })),
       })),
     };
@@ -149,6 +162,7 @@ export default function AdminCourseEditor() {
       title: "Nova Aula",
       videoUrl: "",
       order: module.lessons.length,
+      duration: null,
     };
     const updatedModules = [...course.modules];
     updatedModules[moduleIndex] = {
@@ -171,7 +185,7 @@ export default function AdminCourseEditor() {
     moduleIndex: number,
     lessonIndex: number,
     field: string,
-    value: string
+    value: any
   ) => {
     const updatedModules = [...course.modules];
     updatedModules[moduleIndex] = {
@@ -227,27 +241,33 @@ export default function AdminCourseEditor() {
             <TabsTrigger value="content">Conteúdo (Aulas)</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="details" className="mt-6 space-y-6">
+                   <TabsContent value="details" className="mt-6 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Informações Básicas</CardTitle>
-                <CardDescription>Essas informações aparecem no card do curso.</CardDescription>
+                <CardDescription>
+                  Essas informações aparecem no card do curso.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Título do Curso</Label>
                   <Input
                     value={course.title}
-                    onChange={(e) => setCourse({ ...course, title: e.target.value })}
+                    onChange={(e) =>
+                      setCourse({ ...course, title: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Descrição</Label>
                   <Textarea
                     value={course.description}
-                    onChange={(e) => setCourse({ ...course, description: e.target.value })}
+                    onChange={(e) =>
+                      setCourse({ ...course, description: e.target.value })
+                    }
                     rows={4}
-                                   />
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>URL da Imagem de Capa</Label>
@@ -363,13 +383,14 @@ export default function AdminCourseEditor() {
                                     controls
                                     className="mt-2 w-full rounded-md border"
                                     onLoadedMetadata={(e) => {
-                                      const durationInSeconds =
-                                        e.currentTarget.duration;
+                                      const durationInSeconds = Math.floor(
+                                        e.currentTarget.duration
+                                      );
                                       handleUpdateLesson(
                                         moduleIndex,
                                         lessonIndex,
                                         "duration",
-                                        durationInSeconds.toString()
+                                        durationInSeconds
                                       );
                                     }}
                                   />

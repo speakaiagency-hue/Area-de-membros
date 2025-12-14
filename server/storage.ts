@@ -194,20 +194,30 @@ export class DatabaseStorage implements IStorage {
     const enrollment = await this.getEnrollment(userId, courseId);
     if (!enrollment) return undefined;
 
+    // Validate that the lesson belongs to this course
+    const modules = await this.getModulesByCourse(courseId);
+    let lessonExists = false;
+    let totalLessons = 0;
+    
+    for (const module of modules) {
+      const lessons = await this.getLessonsByModule(module.id);
+      totalLessons += lessons.length;
+      if (lessons.some(l => l.id === lessonId)) {
+        lessonExists = true;
+      }
+    }
+
+    // If lesson doesn't belong to this course, return undefined
+    if (!lessonExists) {
+      return undefined;
+    }
+
+    // If already completed, return current enrollment
     if (enrollment.completedLessons.includes(lessonId)) {
       return enrollment;
     }
 
     const completedLessons = [...enrollment.completedLessons, lessonId];
-    
-    // Calculate progress
-    const modules = await this.getModulesByCourse(courseId);
-    let totalLessons = 0;
-    for (const module of modules) {
-      const lessons = await this.getLessonsByModule(module.id);
-      totalLessons += lessons.length;
-    }
-    
     const progress = totalLessons > 0 ? Math.round((completedLessons.length / totalLessons) * 100) : 0;
 
     const [updated] = await db.update(schema.enrollments)

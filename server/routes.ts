@@ -350,7 +350,18 @@ export async function registerRoutes(
   app.post("/api/enrollments/complete-lesson", requireAuth, async (req, res) => {
     try {
       const { courseId, lessonId } = req.body;
+
+      // Validate required fields
+      if (!courseId || !lessonId) {
+        return res.status(400).json({ message: "Missing required fields: courseId and lessonId" });
+      }
+
       const enrollment = await storage.markLessonComplete(req.session.userId!, courseId, lessonId);
+      
+      if (!enrollment) {
+        return res.status(404).json({ message: "Enrollment not found. Please enroll in the course first." });
+      }
+
       res.json(enrollment);
     } catch (error) {
       console.error("Complete lesson error:", error);
@@ -358,10 +369,33 @@ export async function registerRoutes(
     }
   });
 
-  // Webhook simulation (admin only)
-  app.post("/api/webhook/kiwifi", requireAdmin, async (req, res) => {
+  // Webhook endpoint for Kiwify integration
+  app.post("/api/webhook/kiwify", async (req, res) => {
     try {
+      // Validate webhook secret for security
+      const webhookSecret = req.headers['x-webhook-secret'];
+      if (webhookSecret !== process.env.KIWIFY_WEBHOOK_SECRET) {
+        return res.status(401).json({ message: "Invalid webhook secret" });
+      }
+
       const { email, courseId } = req.body;
+
+      // Validate required fields
+      if (!email || !courseId) {
+        return res.status(400).json({ message: "Missing required fields: email and courseId" });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      // Verify course exists
+      const course = await storage.getCourse(courseId);
+      if (!course) {
+        return res.status(404).json({ message: "Course not found" });
+      }
       
       let user = await storage.getUserByEmail(email);
       if (!user) {
@@ -391,7 +425,7 @@ export async function registerRoutes(
         completedLessons: [],
       });
 
-      res.json({ message: "Enrollment created", enrollment });
+      res.json({ message: "Enrollment created successfully", enrollment });
     } catch (error) {
       console.error("Webhook error:", error);
       res.status(500).json({ message: "Webhook processing failed" });

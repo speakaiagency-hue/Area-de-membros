@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+// IMPORTS
+import { useState, useEffect } from "react";
 import { useRoute, Link } from "wouter";
 import { useAuth } from "@/lib/auth";
 import {
@@ -26,10 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, Plus, Trash, Save, Eye, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type CourseWithModulesAndLessons = Course & {
-  modules: (Module & { lessons: Lesson[] })[];
-};
-
+// COMPONENT
 export default function AdminCourseEditor() {
   const [, params] = useRoute("/admin/course/:id");
   const { user } = useAuth();
@@ -41,7 +39,7 @@ export default function AdminCourseEditor() {
   const deleteLessonMutation = useDeleteLesson();
   const { toast } = useToast();
 
-  const [course, setCourse] = useState<CourseWithModulesAndLessons | null>(null);
+  const [course, setCourse] = useState<Course & { modules: (Module & { lessons: Lesson[] })[] } | null>(null);
 
   useEffect(() => {
     if (coursesData && params?.id) {
@@ -56,39 +54,29 @@ export default function AdminCourseEditor() {
     }
   }, [coursesData, params?.id]);
 
-  if (!user || user.role !== "admin") {
-    return <div>Access Denied</div>;
-  }
-
-  if (coursesLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!course) {
-    return (
-      <DashboardLayout>
-        <div className="text-center py-10">
-          <p className="text-muted-foreground">Curso não encontrado</p>
-          <Link href="/admin">
-            <Button className="mt-4">Voltar para Administração</Button>
-          </Link>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  if (!user || user.role !== "admin") return <div>Access Denied</div>;
+  if (coursesLoading) return (
+    <DashboardLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    </DashboardLayout>
+  );
+  if (!course) return (
+    <DashboardLayout>
+      <div className="text-center py-10">
+        <p className="text-muted-foreground">Curso não encontrado</p>
+        <Link href="/admin">
+          <Button className="mt-4">Voltar para Administração</Button>
+        </Link>
+      </div>
+    </DashboardLayout>
+  );
 
   const handleSaveCourse = () => {
-    // Validação: todas as aulas precisam ter duration
     const hasMissingDurations = course.modules.some((m) =>
       m.lessons.some((l) => l.duration == null)
     );
-
     if (hasMissingDurations) {
       toast({
         title: "Erro",
@@ -98,7 +86,6 @@ export default function AdminCourseEditor() {
       return;
     }
 
-    // Remover campos de data antes de enviar
     const sanitizedCourse = {
       id: course.id,
       title: course.title,
@@ -109,12 +96,14 @@ export default function AdminCourseEditor() {
         id: m.id,
         title: m.title,
         order: m.order,
-        lessons: (m.lessons || []).map((l) => ({
+        lessons: m.lessons.map((l) => ({
           id: l.id,
           title: l.title,
           videoUrl: l.videoUrl,
           order: l.order,
           duration: l.duration,
+          description: l.description,
+          materials: l.materials,
         })),
       })),
     };
@@ -122,16 +111,8 @@ export default function AdminCourseEditor() {
     updateCourseMutation.mutate(
       { id: course.id, data: sanitizedCourse },
       {
-        onSuccess: () => {
-          toast({ title: "Sucesso", description: "Curso salvo com sucesso!" });
-        },
-        onError: () => {
-          toast({
-            title: "Erro",
-            description: "Falha ao salvar curso",
-            variant: "destructive",
-          });
-        },
+        onSuccess: () => toast({ title: "Sucesso", description: "Curso salvo com sucesso!" }),
+        onError: () => toast({ title: "Erro", description: "Falha ao salvar curso", variant: "destructive" }),
       }
     );
   };
@@ -152,48 +133,33 @@ export default function AdminCourseEditor() {
 
   const handleUpdateModuleTitle = (moduleIndex: number, newTitle: string) => {
     const updatedModules = [...course.modules];
-    updatedModules[moduleIndex] = { ...updatedModules[moduleIndex], title: newTitle };
+    updatedModules[moduleIndex].title = newTitle;
     setCourse({ ...course, modules: updatedModules });
   };
 
   const handleAddLesson = (moduleIndex: number) => {
-    const module = course.modules[moduleIndex];
     const newLesson = {
       title: "Nova Aula",
       videoUrl: "",
-      order: module.lessons.length,
+      order: course.modules[moduleIndex].lessons.length,
       duration: null,
+      description: "",
+      materials: "",
     };
     const updatedModules = [...course.modules];
-    updatedModules[moduleIndex] = {
-      ...module,
-      lessons: [...module.lessons, newLesson as any],
-    };
+    updatedModules[moduleIndex].lessons.push(newLesson as any);
     setCourse({ ...course, modules: updatedModules });
   };
 
   const handleDeleteLesson = (moduleIndex: number, lessonIndex: number) => {
     const updatedModules = [...course.modules];
-    updatedModules[moduleIndex] = {
-      ...updatedModules[moduleIndex],
-      lessons: updatedModules[moduleIndex].lessons.filter((_, i) => i !== lessonIndex),
-    };
+    updatedModules[moduleIndex].lessons = updatedModules[moduleIndex].lessons.filter((_, i) => i !== lessonIndex);
     setCourse({ ...course, modules: updatedModules });
   };
 
-  const handleUpdateLesson = (
-    moduleIndex: number,
-    lessonIndex: number,
-    field: string,
-    value: any
-  ) => {
+  const handleUpdateLesson = (moduleIndex: number, lessonIndex: number, field: string, value: any) => {
     const updatedModules = [...course.modules];
-    updatedModules[moduleIndex] = {
-      ...updatedModules[moduleIndex],
-      lessons: updatedModules[moduleIndex].lessons.map((lesson, i) =>
-        i === lessonIndex ? { ...lesson, [field]: value } : lesson
-      ),
-    };
+    updatedModules[moduleIndex].lessons[lessonIndex][field] = value;
     setCourse({ ...course, modules: updatedModules });
   };
 
@@ -220,16 +186,8 @@ export default function AdminCourseEditor() {
                 </Button>
               </a>
             </Link>
-            <Button
-              onClick={handleSaveCourse}
-              className="gap-2"
-              disabled={updateCourseMutation.isPending}
-            >
-              {updateCourseMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
+            <Button onClick={handleSaveCourse} className="gap-2" disabled={updateCourseMutation.isPending}>
+              {updateCourseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Salvar Alterações
             </Button>
           </div>
@@ -241,39 +199,26 @@ export default function AdminCourseEditor() {
             <TabsTrigger value="content">Conteúdo (Aulas)</TabsTrigger>
           </TabsList>
 
-                   <TabsContent value="details" className="mt-6 space-y-6">
+          <TabsContent value="details" className="mt-6 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Informações Básicas</CardTitle>
-                <CardDescription>
-                  Essas informações aparecem no card do curso.
-                </CardDescription>
+                <CardDescription>Essas informações aparecem no card do curso.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Título do Curso</Label>
-                  <Input
-                    value={course.title}
-                    onChange={(e) =>
-                      setCourse({ ...course, title: e.target.value })
-                    }
-                  />
+                  <Input value={course.title} onChange={(e) => setCourse({ ...course, title: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Descrição</Label>
-                  <Textarea
-                    value={course.description}
-                    onChange={(e) =>
-                      setCourse({ ...course, description: e.target.value })
-                    }
-                    rows={4}
-                  />
+                  <Textarea value={course.description} onChange={(e) => setCourse({ ...course, description: e.target.value })} rows={4} />
                 </div>
                 <div className="space-y-2">
                   <Label>URL da Imagem de Capa</Label>
                   <div className="flex gap-4">
                     <div className="flex-1">
-                      <Input
+                                            <Input
                         value={course.coverImage}
                         onChange={(e) =>
                           setCourse({ ...course, coverImage: e.target.value })
@@ -349,63 +294,93 @@ export default function AdminCourseEditor() {
                         (module.lessons || []).map((lesson, lessonIndex) => (
                           <div
                             key={lessonIndex}
-                            className="flex items-center justify-between border rounded-md p-2"
+                            className="flex flex-col gap-4 border rounded-md p-3"
                           >
-                            <div className="flex-1 space-y-2">
+                            <Input
+                              value={lesson.title}
+                              onChange={(e) =>
+                                handleUpdateLesson(
+                                  moduleIndex,
+                                  lessonIndex,
+                                  "title",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Título da Aula"
+                            />
+
+                            <Textarea
+                              value={lesson.description || ""}
+                              onChange={(e) =>
+                                handleUpdateLesson(
+                                  moduleIndex,
+                                  lessonIndex,
+                                  "description",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Descrição da Aula"
+                              rows={3}
+                            />
+
+                            <Textarea
+                              value={lesson.materials || ""}
+                              onChange={(e) =>
+                                handleUpdateLesson(
+                                  moduleIndex,
+                                  lessonIndex,
+                                  "materials",
+                                  e.target.value
+                                )
+                              }
+                              placeholder="Materiais complementares (links, PDFs, etc)"
+                              rows={2}
+                            />
+
+                            <div className="space-y-1">
                               <Input
-                                value={lesson.title}
+                                value={lesson.videoUrl}
                                 onChange={(e) =>
                                   handleUpdateLesson(
                                     moduleIndex,
                                     lessonIndex,
-                                    "title",
+                                    "videoUrl",
                                     e.target.value
                                   )
                                 }
-                                placeholder="Título da Aula"
+                                placeholder="Cole a URL do vídeo hospedado"
                               />
-                              <div className="space-y-1">
-                                <Input
-                                  value={lesson.videoUrl}
-                                  onChange={(e) =>
+                              {lesson.videoUrl && (
+                                <video
+                                  src={lesson.videoUrl}
+                                  controls
+                                  className="mt-2 w-full rounded-md border"
+                                  onLoadedMetadata={(e) => {
+                                    const durationInSeconds = Math.floor(
+                                      e.currentTarget.duration
+                                    );
                                     handleUpdateLesson(
                                       moduleIndex,
                                       lessonIndex,
-                                      "videoUrl",
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="Cole a URL do vídeo hospedado"
+                                      "duration",
+                                      durationInSeconds
+                                    );
+                                  }}
                                 />
-                                {lesson.videoUrl && (
-                                  <video
-                                    src={lesson.videoUrl}
-                                    controls
-                                    className="mt-2 w-full rounded-md border"
-                                    onLoadedMetadata={(e) => {
-                                      const durationInSeconds = Math.floor(
-                                        e.currentTarget.duration
-                                      );
-                                      handleUpdateLesson(
-                                        moduleIndex,
-                                        lessonIndex,
-                                        "duration",
-                                        durationInSeconds
-                                      );
-                                    }}
-                                  />
-                                )}
-                              </div>
+                              )}
                             </div>
-                            <Button
-                              onClick={() =>
-                                handleDeleteLesson(moduleIndex, lessonIndex)
-                              }
-                              variant="ghost"
-                              size="icon"
-                            >
-                              <Trash className="h-4 w-4 text-red-500" />
-                            </Button>
+
+                            <div className="flex justify-end">
+                              <Button
+                                onClick={() =>
+                                  handleDeleteLesson(moduleIndex, lessonIndex)
+                                }
+                                variant="ghost"
+                                size="icon"
+                              >
+                                <Trash className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
                           </div>
                         ))
                       )}

@@ -1,4 +1,3 @@
-// IMPORTS
 import { useState, useEffect } from "react";
 import { useRoute, Link } from "wouter";
 import { useAuth } from "@/lib/auth";
@@ -27,7 +26,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, Plus, Trash, Save, Eye, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// COMPONENT
+type CourseWithModulesAndLessons = Course & {
+  modules: (Module & { lessons: Lesson[] })[];
+};
+
 export default function AdminCourseEditor() {
   const [, params] = useRoute("/admin/course/:id");
   const { user } = useAuth();
@@ -39,15 +41,25 @@ export default function AdminCourseEditor() {
   const deleteLessonMutation = useDeleteLesson();
   const { toast } = useToast();
 
-  const [course, setCourse] = useState<Course & { modules: (Module & { lessons: Lesson[] })[] } | null>(null);
+  const [course, setCourse] = useState<CourseWithModulesAndLessons | null>(null);
 
   useEffect(() => {
     if (coursesData && params?.id) {
       const foundCourse = coursesData.find((c) => c.id === params.id);
       if (foundCourse) {
-        const normalizedModules = foundCourse.modules.map((m) => ({
+        const normalizedModules = (foundCourse.modules ?? []).map((m) => ({
           ...m,
-          lessons: m.lessons || [],
+          lessons: (m.lessons ?? []).map((l) => ({
+            ...l,
+            description: l.description ?? "",
+            materials: l.materials ?? "",
+            duration:
+              typeof l.duration === "number"
+                ? l.duration
+                : l.duration == null
+                ? null
+                : Number(l.duration) || null,
+          })),
         }));
         setCourse({ ...foundCourse, modules: normalizedModules });
       }
@@ -55,27 +67,29 @@ export default function AdminCourseEditor() {
   }, [coursesData, params?.id]);
 
   if (!user || user.role !== "admin") return <div>Access Denied</div>;
-  if (coursesLoading) return (
-    <DashboardLayout>
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    </DashboardLayout>
-  );
-  if (!course) return (
-    <DashboardLayout>
-      <div className="text-center py-10">
-        <p className="text-muted-foreground">Curso não encontrado</p>
-        <Link href="/admin">
-          <Button className="mt-4">Voltar para Administração</Button>
-        </Link>
-      </div>
-    </DashboardLayout>
-  );
+  if (coursesLoading)
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
+    );
+  if (!course)
+    return (
+      <DashboardLayout>
+        <div className="text-center py-10">
+          <p className="text-muted-foreground">Curso não encontrado</p>
+          <Link href="/admin">
+            <Button className="mt-4">Voltar para Administração</Button>
+          </Link>
+        </div>
+      </DashboardLayout>
+    );
 
   const handleSaveCourse = () => {
-    const hasMissingDurations = course.modules.some((m) =>
-      m.lessons.some((l) => l.duration == null)
+    const hasMissingDurations = (course.modules ?? []).some((m) =>
+      (m.lessons ?? []).some((l) => l.duration == null)
     );
     if (hasMissingDurations) {
       toast({
@@ -88,22 +102,22 @@ export default function AdminCourseEditor() {
 
     const sanitizedCourse = {
       id: course.id,
-      title: course.title,
-      description: course.description,
-      coverImage: course.coverImage,
-      author: course.author,
-      modules: course.modules.map((m) => ({
+      title: course.title ?? "",
+      description: course.description ?? "",
+      coverImage: course.coverImage ?? "",
+      author: course.author ?? "",
+      modules: (course.modules ?? []).map((m) => ({
         id: m.id,
-        title: m.title,
-        order: m.order,
-        lessons: m.lessons.map((l) => ({
+        title: m.title ?? "",
+        order: m.order ?? 0,
+        lessons: (m.lessons ?? []).map((l) => ({
           id: l.id,
-          title: l.title,
-          videoUrl: l.videoUrl,
-          order: l.order,
-          duration: l.duration,
-          description: l.description,
-          materials: l.materials,
+          title: l.title ?? "",
+          videoUrl: l.videoUrl ?? "",
+          order: l.order ?? 0,
+          duration: l.duration as number,
+          description: l.description ?? "",
+          materials: l.materials ?? "",
         })),
       })),
     };
@@ -111,8 +125,14 @@ export default function AdminCourseEditor() {
     updateCourseMutation.mutate(
       { id: course.id, data: sanitizedCourse },
       {
-        onSuccess: () => toast({ title: "Sucesso", description: "Curso salvo com sucesso!" }),
-        onError: () => toast({ title: "Erro", description: "Falha ao salvar curso", variant: "destructive" }),
+        onSuccess: () =>
+          toast({ title: "Sucesso", description: "Curso salvo com sucesso!" }),
+        onError: () =>
+          toast({
+            title: "Erro",
+            description: "Falha ao salvar curso",
+            variant: "destructive",
+          }),
       }
     );
   };
@@ -153,13 +173,35 @@ export default function AdminCourseEditor() {
 
   const handleDeleteLesson = (moduleIndex: number, lessonIndex: number) => {
     const updatedModules = [...course.modules];
-    updatedModules[moduleIndex].lessons = updatedModules[moduleIndex].lessons.filter((_, i) => i !== lessonIndex);
+    updatedModules[moduleIndex].lessons = updatedModules[moduleIndex].lessons.filter(
+      (_, i) => i !== lessonIndex
+    );
     setCourse({ ...course, modules: updatedModules });
   };
 
-  const handleUpdateLesson = (moduleIndex: number, lessonIndex: number, field: string, value: any) => {
+  const handleUpdateLesson = (
+    moduleIndex: number,
+    lessonIndex: number,
+    field: string,
+    value: any
+  ) => {
     const updatedModules = [...course.modules];
-    updatedModules[moduleIndex].lessons[lessonIndex][field] = value;
+    const lessons = [...updatedModules[moduleIndex].lessons];
+    const lesson = { ...lessons[lessonIndex] };
+
+    if (field === "duration") {
+      lesson.duration =
+        typeof value === "number"
+          ? value
+          : value == null
+          ? null
+          : Number(value) || null;
+    } else {
+      lesson[field] = value ?? "";
+    }
+
+    lessons[lessonIndex] = lesson;
+    updatedModules[moduleIndex].lessons = lessons;
     setCourse({ ...course, modules: updatedModules });
   };
 
@@ -180,14 +222,20 @@ export default function AdminCourseEditor() {
           </div>
           <div className="flex gap-2">
             <Link href={`/course/${course.id}`}>
-              <a target="_blank">
-                <Button variant="outline" className="gap-2">
-                  <Eye className="h-4 w-4" /> Visualizar
-                </Button>
-              </a>
+              <Button variant="outline" className="gap-2">
+                <Eye className="h-4 w-4" /> Visualizar
+              </Button>
             </Link>
-            <Button onClick={handleSaveCourse} className="gap-2" disabled={updateCourseMutation.isPending}>
-              {updateCourseMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            <Button
+              onClick={handleSaveCourse}
+              className="gap-2"
+              disabled={updateCourseMutation.isPending}
+            >
+              {updateCourseMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
               Salvar Alterações
             </Button>
           </div>
@@ -199,26 +247,39 @@ export default function AdminCourseEditor() {
             <TabsTrigger value="content">Conteúdo (Aulas)</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="details" className="mt-6 space-y-6">
+                    <TabsContent value="details" className="mt-6 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Informações Básicas</CardTitle>
-                <CardDescription>Essas informações aparecem no card do curso.</CardDescription>
+                <CardDescription>
+                  Essas informações aparecem no card do curso.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Título do Curso</Label>
-                  <Input value={course.title} onChange={(e) => setCourse({ ...course, title: e.target.value })} />
+                  <Input
+                    value={course.title}
+                    onChange={(e) =>
+                      setCourse({ ...course, title: e.target.value })
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Descrição</Label>
-                  <Textarea value={course.description} onChange={(e) => setCourse({ ...course, description: e.target.value })} rows={4} />
+                  <Textarea
+                    value={course.description}
+                    onChange={(e) =>
+                      setCourse({ ...course, description: e.target.value })
+                    }
+                    rows={4}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>URL da Imagem de Capa</Label>
                   <div className="flex gap-4">
                     <div className="flex-1">
-                                            <Input
+                      <Input
                         value={course.coverImage}
                         onChange={(e) =>
                           setCourse({ ...course, coverImage: e.target.value })
@@ -357,14 +418,19 @@ export default function AdminCourseEditor() {
                                   className="mt-2 w-full rounded-md border"
                                   onLoadedMetadata={(e) => {
                                     const durationInSeconds = Math.floor(
-                                      e.currentTarget.duration
+                                      e.currentTarget.duration || 0
                                     );
-                                    handleUpdateLesson(
-                                      moduleIndex,
-                                      lessonIndex,
-                                      "duration",
-                                      durationInSeconds
-                                    );
+                                    if (
+                                      Number.isFinite(durationInSeconds) &&
+                                      durationInSeconds > 0
+                                    ) {
+                                      handleUpdateLesson(
+                                        moduleIndex,
+                                        lessonIndex,
+                                        "duration",
+                                        durationInSeconds
+                                      );
+                                    }
                                   }}
                                 />
                               )}

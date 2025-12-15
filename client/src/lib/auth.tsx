@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Recupera sessão ao carregar
+  // Restaura sessão ao carregar
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (!token) {

@@ -39,7 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!res.ok) throw new Error("Falha ao restaurar sessão");
         const data = await res.json();
         setUser(data);
+        setError(null);
       } catch (err: any) {
+        console.error("Erro ao restaurar sessão:", err);
         setError(err);
         localStorage.removeItem("authToken");
         setUser(null);
@@ -61,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data);
       setError(null);
     } catch (err: any) {
+      console.error("Erro ao fazer login:", err);
       setError(err);
       localStorage.removeItem("authToken");
       setUser(null);

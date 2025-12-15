@@ -61,7 +61,7 @@ export default function AdminCourseEditor() {
                 : Number(l.duration) || null,
           })),
         }));
-        setCourse({ ...foundCourse, modules: normalizedModules });
+        setCourse({ ...foundCourse, modules: normalizedModules ?? [] });
       }
     }
   }, [coursesData, params?.id]);
@@ -163,22 +163,20 @@ export default function AdminCourseEditor() {
   };
 
   const handleAddLesson = (moduleIndex: number) => {
-    const newLesson = {
-      title: "Nova Aula",
-      videoUrl: "",
-      order: (course?.modules[moduleIndex]?.lessons ?? []).length,
-      duration: null,
-      description: "",
-      materials: "",
-    };
     const updatedModules = [...(course?.modules ?? [])];
-    if (updatedModules[moduleIndex]) {
-      updatedModules[moduleIndex].lessons = [
-        ...(updatedModules[moduleIndex].lessons ?? []),
-        newLesson as any,
-      ];
-      setCourse({ ...course!, modules: updatedModules });
-    }
+    if (!updatedModules[moduleIndex]) return;
+    updatedModules[moduleIndex].lessons = [
+      ...(updatedModules[moduleIndex].lessons ?? []),
+      {
+        title: "Nova Aula",
+        videoUrl: "",
+        order: (updatedModules[moduleIndex].lessons ?? []).length,
+        duration: null,
+        description: "",
+        materials: "",
+      } as any,
+    ];
+    setCourse({ ...course!, modules: updatedModules });
   };
 
   const handleDeleteLesson = (moduleIndex: number, lessonIndex: number) => {

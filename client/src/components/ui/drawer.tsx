@@ -15,9 +15,7 @@ const Drawer = ({
 Drawer.displayName = "Drawer"
 
 const DrawerTrigger = DrawerPrimitive.Trigger
-
 const DrawerPortal = DrawerPrimitive.Portal
-
 const DrawerClose = DrawerPrimitive.Close
 
 const DrawerOverlay = React.forwardRef<
@@ -47,6 +45,15 @@ const DrawerContent = React.forwardRef<
       {...props}
     >
       <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
+
+      {/* Garantindo acessibilidade: sempre renderiza Title e Description ocultos */}
+      <DrawerHeader>
+        <DrawerTitle className="sr-only">Título do drawer</DrawerTitle>
+        <DrawerDescription className="sr-only">
+          Descrição do drawer
+        </DrawerDescription>
+      </DrawerHeader>
+
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>
@@ -81,10 +88,7 @@ const DrawerTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DrawerPrimitive.Title
     ref={ref}
-    className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
-      className
-    )}
+    className={cn("text-lg font-semibold leading-none tracking-tight", className)}
     {...props}
   />
 ))

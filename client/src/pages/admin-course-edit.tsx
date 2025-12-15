@@ -88,7 +88,7 @@ export default function AdminCourseEditor() {
     );
 
   const handleSaveCourse = () => {
-    const hasMissingDurations = (course.modules ?? []).some((m) =>
+    const hasMissingDurations = (course?.modules ?? []).some((m) =>
       (m.lessons ?? []).some((l) => l.duration == null)
     );
     if (hasMissingDurations) {
@@ -106,7 +106,7 @@ export default function AdminCourseEditor() {
       description: course.description ?? "",
       coverImage: course.coverImage ?? "",
       author: course.author ?? "",
-      modules: (course.modules ?? []).map((m) => ({
+      modules: (course?.modules ?? []).map((m) => ({
         id: m.id,
         title: m.title ?? "",
         order: m.order ?? 0,
@@ -140,43 +140,55 @@ export default function AdminCourseEditor() {
   const handleAddModule = () => {
     const newModule = {
       title: "Novo Módulo",
-      order: course.modules.length,
+      order: (course?.modules ?? []).length,
       lessons: [],
     };
-    setCourse({ ...course, modules: [...course.modules, newModule as any] });
+    setCourse({
+      ...course!,
+      modules: [...(course?.modules ?? []), newModule as any],
+    });
   };
 
   const handleDeleteModule = (moduleIndex: number) => {
-    const updatedModules = course.modules.filter((_, i) => i !== moduleIndex);
-    setCourse({ ...course, modules: updatedModules });
+    const updatedModules = (course?.modules ?? []).filter((_, i) => i !== moduleIndex);
+    setCourse({ ...course!, modules: updatedModules });
   };
 
   const handleUpdateModuleTitle = (moduleIndex: number, newTitle: string) => {
-    const updatedModules = [...course.modules];
-    updatedModules[moduleIndex].title = newTitle;
-    setCourse({ ...course, modules: updatedModules });
+    const updatedModules = [...(course?.modules ?? [])];
+    if (updatedModules[moduleIndex]) {
+      updatedModules[moduleIndex].title = newTitle;
+      setCourse({ ...course!, modules: updatedModules });
+    }
   };
 
   const handleAddLesson = (moduleIndex: number) => {
     const newLesson = {
       title: "Nova Aula",
       videoUrl: "",
-      order: course.modules[moduleIndex].lessons.length,
+      order: (course?.modules[moduleIndex]?.lessons ?? []).length,
       duration: null,
       description: "",
       materials: "",
     };
-    const updatedModules = [...course.modules];
-    updatedModules[moduleIndex].lessons.push(newLesson as any);
-    setCourse({ ...course, modules: updatedModules });
+    const updatedModules = [...(course?.modules ?? [])];
+    if (updatedModules[moduleIndex]) {
+      updatedModules[moduleIndex].lessons = [
+        ...(updatedModules[moduleIndex].lessons ?? []),
+        newLesson as any,
+      ];
+      setCourse({ ...course!, modules: updatedModules });
+    }
   };
 
   const handleDeleteLesson = (moduleIndex: number, lessonIndex: number) => {
-    const updatedModules = [...course.modules];
-    updatedModules[moduleIndex].lessons = updatedModules[moduleIndex].lessons.filter(
-      (_, i) => i !== lessonIndex
-    );
-    setCourse({ ...course, modules: updatedModules });
+    const updatedModules = [...(course?.modules ?? [])];
+    if (updatedModules[moduleIndex]) {
+      updatedModules[moduleIndex].lessons = (updatedModules[moduleIndex].lessons ?? []).filter(
+        (_, i) => i !== lessonIndex
+      );
+      setCourse({ ...course!, modules: updatedModules });
+    }
   };
 
   const handleUpdateLesson = (
@@ -185,24 +197,26 @@ export default function AdminCourseEditor() {
     field: string,
     value: any
   ) => {
-    const updatedModules = [...course.modules];
-    const lessons = [...updatedModules[moduleIndex].lessons];
-    const lesson = { ...lessons[lessonIndex] };
+    const updatedModules = [...(course?.modules ?? [])];
+    if (updatedModules[moduleIndex]) {
+      const lessons = [...(updatedModules[moduleIndex].lessons ?? [])];
+      const lesson = { ...lessons[lessonIndex] };
 
-    if (field === "duration") {
-      lesson.duration =
-        typeof value === "number"
-          ? value
-          : value == null
-          ? null
-          : Number(value) || null;
-    } else {
-      lesson[field] = value ?? "";
+      if (field === "duration") {
+        lesson.duration =
+          typeof value === "number"
+            ? value
+            : value == null
+            ? null
+            : Number(value) || null;
+      } else {
+        lesson[field] = value ?? "";
+      }
+
+      lessons[lessonIndex] = lesson;
+      updatedModules[moduleIndex].lessons = lessons;
+      setCourse({ ...course!, modules: updatedModules });
     }
-
-    lessons[lessonIndex] = lesson;
-    updatedModules[moduleIndex].lessons = lessons;
-    setCourse({ ...course, modules: updatedModules });
   };
 
   return (
@@ -241,13 +255,13 @@ export default function AdminCourseEditor() {
           </div>
         </div>
 
-        <Tabs defaultValue="content" className="w-full">
+                <Tabs defaultValue="content" className="w-full">
           <TabsList className="w-full max-w-md grid grid-cols-2">
             <TabsTrigger value="details">Detalhes do Curso</TabsTrigger>
             <TabsTrigger value="content">Conteúdo (Aulas)</TabsTrigger>
           </TabsList>
 
-                    <TabsContent value="details" className="mt-6 space-y-6">
+          <TabsContent value="details" className="mt-6 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Informações Básicas</CardTitle>
@@ -290,11 +304,17 @@ export default function AdminCourseEditor() {
                       </p>
                     </div>
                     <div className="h-20 w-32 shrink-0 overflow-hidden rounded-md border bg-muted">
-                      <img
-                        src={course.coverImage}
-                        className="h-full w-full object-cover"
-                        alt="Preview"
-                      />
+                      {course.coverImage ? (
+                        <img
+                          src={course.coverImage}
+                          className="h-full w-full object-cover"
+                          alt="Preview"
+                        />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">
+                          Sem imagem
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -320,13 +340,13 @@ export default function AdminCourseEditor() {
               </Button>
             </div>
 
-            {course.modules.length === 0 ? (
+            {(course?.modules ?? []).length === 0 ? (
               <div className="text-center py-10 border-2 border-dashed rounded-lg text-muted-foreground">
                 Nenhum módulo criado. Comece adicionando um módulo.
               </div>
             ) : (
               <div className="space-y-6">
-                {course.modules.map((module, moduleIndex) => (
+                {(course?.modules ?? []).map((module, moduleIndex) => (
                   <Card key={moduleIndex}>
                     <CardHeader className="flex flex-row items-center justify-between">
                       <div>
@@ -347,12 +367,12 @@ export default function AdminCourseEditor() {
                       </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {(module.lessons || []).length === 0 ? (
+                      {(module.lessons ?? []).length === 0 ? (
                         <p className="text-muted-foreground text-sm">
                           Nenhuma aula neste módulo.
                         </p>
                       ) : (
-                        (module.lessons || []).map((lesson, lessonIndex) => (
+                        (module.lessons ?? []).map((lesson, lessonIndex) => (
                           <div
                             key={lessonIndex}
                             className="flex flex-col gap-4 border rounded-md p-3"

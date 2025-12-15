@@ -232,27 +232,41 @@ export default function AdminDashboard() {
                         <TableHead>Módulos</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
-                    </TableHeader>
+                                       </TableHeader>
                     <TableBody>
-                      {courses.map((course) => (
+                      {(courses ?? []).map((course) => (
                         <TableRow key={course.id}>
                           <TableCell>
-                            <img src={course.coverImage} className="h-10 w-16 object-cover rounded-md" alt={course.title} />
+                            <img
+                              src={course.coverImage ?? ""}
+                              className="h-10 w-16 object-cover rounded-md"
+                              alt={course.title ?? "Capa do curso"}
+                            />
                           </TableCell>
-                          <TableCell className="font-medium">{course.title}</TableCell>
-                          <TableCell>{course.modules.length}</TableCell>
+                          <TableCell className="font-medium">
+                            {course.title ?? ""}
+                          </TableCell>
+                          <TableCell>
+                            {(course.modules ?? []).length}
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Link href={`/admin/course/${course.id}`}>
-                                <Button variant="ghost" size="icon" title="Editar Conteúdo">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Editar Conteúdo"
+                                >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                               </Link>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="text-destructive hover:bg-destructive/10"
-                                onClick={() => handleDeleteCourse(course.id, course.title)}
+                                onClick={() =>
+                                  handleDeleteCourse(course.id, course.title ?? "")
+                                }
                                 title="Excluir Curso"
                               >
                                 <Trash className="h-4 w-4" />
@@ -273,14 +287,17 @@ export default function AdminDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Configuração Webhook Kiwifi</CardTitle>
-                  <CardDescription>URL para receber notificações de venda.</CardDescription>
+                  <CardDescription>
+                    URL para receber notificações de venda.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="p-3 bg-muted rounded-md text-xs font-mono break-all border border-dashed border-primary/30">
                     https://api.seusite.com/webhooks/kiwifi
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Copie esta URL e configure no painel da Kiwifi para liberar o acesso automaticamente após o pagamento.
+                    Copie esta URL e configure no painel da Kiwifi para liberar
+                    o acesso automaticamente após o pagamento.
                   </p>
                 </CardContent>
               </Card>
@@ -291,26 +308,33 @@ export default function AdminDashboard() {
                     <CreditCard className="h-5 w-5 text-primary" />
                     Simular Compra (Teste)
                   </CardTitle>
-                  <CardDescription>Use esta ferramenta para testar a liberação automática sem pagar.</CardDescription>
+                  <CardDescription>
+                    Use esta ferramenta para testar a liberação automática sem
+                    pagar.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label>Email do Usuário</Label>
-                    <Input 
-                      placeholder="ex: aluno@email.com" 
+                    <Input
+                      placeholder="ex: aluno@email.com"
                       value={webhookEmail}
                       onChange={(e) => setWebhookEmail(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Curso para Liberar</Label>
-                    <select 
+                    <select
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                       value={selectedCourseId}
                       onChange={(e) => setSelectedCourseId(e.target.value)}
                     >
                       <option value="">Selecione um curso...</option>
-                      {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                      {(courses ?? []).map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title ?? ""}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </CardContent>

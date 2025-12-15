@@ -14,7 +14,10 @@ export default function DashboardHome() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useEnrollments();
 
   // Helper to check enrollment status
-  const getEnrollment = (courseId: string) => enrollments?.find(e => e.userId === user?.id && e.courseId === courseId);
+  const getEnrollment = (courseId: string) =>
+    (enrollments ?? []).find(
+      (e) => e.userId === user?.id && e.courseId === courseId
+    );
 
   if (coursesLoading || enrollmentsLoading) {
     return (
@@ -31,21 +34,26 @@ export default function DashboardHome() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Meus Cursos</h1>
-          <p className="text-muted-foreground mt-2">Continue de onde parou ou comece algo novo.</p>
+          <p className="text-muted-foreground mt-2">
+            Continue de onde parou ou comece algo novo.
+          </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {courses?.map((course) => {
+          {(courses ?? []).map((course) => {
             const enrollment = getEnrollment(course.id);
             const isEnrolled = !!enrollment;
             const progress = enrollment?.progress || 0;
 
             return (
-              <Card key={course.id} className="group overflow-hidden border-border/50 hover:shadow-lg transition-all duration-300 hover:border-primary/20">
+              <Card
+                key={course.id}
+                className="group overflow-hidden border-border/50 hover:shadow-lg transition-all duration-300 hover:border-primary/20"
+              >
                 <div className="relative aspect-video overflow-hidden bg-muted">
-                  <img 
-                    src={course.coverImage} 
-                    alt={course.title} 
+                  <img
+                    src={course.coverImage}
+                    alt={course.title}
                     className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
                   />
                   {!isEnrolled && (
@@ -62,10 +70,13 @@ export default function DashboardHome() {
                     </div>
                   )}
                 </div>
-                
+
                 <CardHeader className="p-5 pb-2">
                   <div className="flex justify-between items-start gap-2 mb-2">
-                    <Badge variant={isEnrolled ? "default" : "secondary"} className="rounded-sm text-[10px] uppercase tracking-wider font-semibold">
+                    <Badge
+                      variant={isEnrolled ? "default" : "secondary"}
+                      className="rounded-sm text-[10px] uppercase tracking-wider font-semibold"
+                    >
                       {isEnrolled ? "Inscrito" : "Bloqueado"}
                     </Badge>
                   </div>
@@ -73,7 +84,7 @@ export default function DashboardHome() {
                     {course.title}
                   </h3>
                 </CardHeader>
-                
+
                 <CardContent className="p-5 pt-2 pb-4">
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {course.description}
@@ -89,7 +100,10 @@ export default function DashboardHome() {
                       </div>
                       <Progress value={progress} className="h-2" />
                       <Link href={`/course/${course.id}`}>
-                        <Button className="w-full mt-4 group-hover:translate-y-0 translate-y-1 transition-transform" data-testid={`button-course-${course.id}`}>
+                        <Button
+                          className="w-full mt-4 group-hover:translate-y-0 translate-y-1 transition-transform"
+                          data-testid={`button-course-${course.id}`}
+                        >
                           Acessar Aulas
                         </Button>
                       </Link>

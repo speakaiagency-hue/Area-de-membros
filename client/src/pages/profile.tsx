@@ -52,9 +52,9 @@ export default function ProfilePage() {
             {/* Avatar */}
             <div className="flex items-center gap-6">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={formData.avatar} alt={formData.name} />
+                <AvatarImage src={formData.avatar || ""} alt={formData.name || "avatar"} />
                 <AvatarFallback className="text-2xl">
-                  {formData.name.charAt(0).toUpperCase()}
+                  {(formData.name ?? "").charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 space-y-3">
@@ -70,33 +70,28 @@ export default function ProfilePage() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              // Validar tamanho (max 2MB)
                               if (file.size > 2 * 1024 * 1024) {
                                 toast({
                                   title: "Arquivo muito grande",
                                   description: "A imagem deve ter no máximo 2MB",
-                                  variant: "destructive"
+                                  variant: "destructive",
                                 });
                                 return;
                               }
-
-                              // Validar tipo
-                              if (!file.type.startsWith('image/')) {
+                              if (!file.type.startsWith("image/")) {
                                 toast({
                                   title: "Formato inválido",
                                   description: "Por favor, selecione uma imagem",
-                                  variant: "destructive"
+                                  variant: "destructive",
                                 });
                                 return;
                               }
-
-                              // Criar preview
                               const reader = new FileReader();
                               reader.onloadend = () => {
                                 setFormData({ ...formData, avatar: reader.result as string });
                                 toast({
                                   title: "Imagem carregada",
-                                  description: "Clique em 'Salvar' para confirmar"
+                                  description: "Clique em 'Salvar' para confirmar",
                                 });
                               };
                               reader.readAsDataURL(file);
@@ -162,12 +157,14 @@ export default function ProfilePage() {
                 Tipo de Conta
               </Label>
               <div className="flex items-center gap-2">
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  user.role === 'admin' 
-                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300' 
-                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                }`}>
-                  {user.role === 'admin' ? 'Administrador' : 'Usuário'}
+                <div
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    user.role === "admin"
+                      ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+                      : "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                  }`}
+                >
+                  {user.role === "admin" ? "Administrador" : "Usuário"}
                 </div>
               </div>
             </div>
@@ -177,22 +174,20 @@ export default function ProfilePage() {
             {/* Botões */}
             <div className="flex gap-3">
               {!isEditing ? (
-                <Button onClick={() => setIsEditing(true)}>
-                  Editar Perfil
-                </Button>
+                <Button onClick={() => setIsEditing(true)}>Editar Perfil</Button>
               ) : (
                 <>
                   <Button onClick={handleSave} className="gap-2">
                     <Save className="h-4 w-4" />
                     Salvar Alterações
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setFormData({
-                        name: user.name || "",
-                        email: user.email || "",
-                        avatar: user.avatar || "",
+                        name: user?.name || "",
+                        email: user?.email || "",
+                        avatar: user?.avatar || "",
                       });
                       setIsEditing(false);
                     }}
@@ -209,9 +204,7 @@ export default function ProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle>Estatísticas</CardTitle>
-            <CardDescription>
-              Seu progresso na plataforma
-            </CardDescription>
+            <CardDescription>Seu progresso na plataforma</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -223,9 +216,11 @@ export default function ProfilePage() {
                 <div className="text-2xl font-bold">0</div>
                 <div className="text-sm text-muted-foreground">Aulas Concluídas</div>
               </div>
-              <div className="p-4 border rounded-lg">
+                            <div className="p-4 border rounded-lg">
                 <div className="text-2xl font-bold">0%</div>
-                <div className="text-sm text-muted-foreground">Progresso Médio</div>
+                <div className="text-sm text-muted-foreground">
+                  Progresso Médio
+                </div>
               </div>
             </div>
           </CardContent>

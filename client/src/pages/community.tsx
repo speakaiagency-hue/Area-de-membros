@@ -193,9 +193,7 @@ export default function CommunityPage() {
                   </DialogDescription>
                 </DialogHeader>
                 {/* Formulário de adicionar vídeo */}
-                <div className="grid gap-4 py-4">
-                  {/* campos */}
-                </div>
+                <div className="grid gap-4 py-4">{/* campos */}</div>
                 <DialogFooter>
                   <Button onClick={handleAddVideo}>Publicar</Button>
                 </DialogFooter>
@@ -262,8 +260,9 @@ export default function CommunityPage() {
                       src={video.videoUrl}
                       className="w-full h-full object-cover"
                       controls
-                                      />
-                </div>
+                    />
+                  )}
+                               </div>
                 <CardHeader className="p-4 pb-2">
                   <CardTitle className="line-clamp-1 text-lg">
                     {video.title}

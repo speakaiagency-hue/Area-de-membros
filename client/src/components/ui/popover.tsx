@@ -22,7 +22,7 @@ const PopoverContent = React.forwardRef<
       )}
       {...props}
     >
-      {/* Garantindo acessibilidade: título e descrição ocultos se não forem passados */}
+      {/* Garantindo acessibilidade: título e descrição ocultos */}
       <h2 className="sr-only">Título do popover</h2>
       <p className="sr-only">Descrição do popover</p>
 

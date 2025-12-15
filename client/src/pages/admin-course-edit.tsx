@@ -199,18 +199,7 @@ export default function AdminCourseEditor() {
     if (updatedModules[moduleIndex]) {
       const lessons = [...(updatedModules[moduleIndex].lessons ?? [])];
       const lesson = { ...lessons[lessonIndex] };
-
-      if (field === "duration") {
-        lesson.duration =
-          typeof value === "number"
-            ? value
-            : value == null
-            ? null
-            : Number(value) || null;
-      } else {
-        lesson[field] = value ?? "";
-      }
-
+      lesson[field] = value;
       lessons[lessonIndex] = lesson;
       updatedModules[moduleIndex].lessons = lessons;
       setCourse({ ...course!, modules: updatedModules });
@@ -219,268 +208,204 @@ export default function AdminCourseEditor() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 pb-20">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link href="/admin">
-              <Button variant="ghost" size="icon">
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Editar Curso</h1>
-              <p className="text-muted-foreground text-sm">{course.title}</p>
-            </div>
-          </div>
+          <Link href="/admin">
+            <Button variant="ghost" className="gap-2">
+              <ChevronLeft className="h-4 w-4" /> Voltar
+            </Button>
+          </Link>
           <div className="flex gap-2">
+            <Button onClick={handleSaveCourse} className="gap-2">
+              <Save className="h-4 w-4" /> Salvar Curso
+            </Button>
             <Link href={`/course/${course.id}`}>
               <Button variant="outline" className="gap-2">
                 <Eye className="h-4 w-4" /> Visualizar
               </Button>
             </Link>
-            <Button
-              onClick={handleSaveCourse}
-              className="gap-2"
-              disabled={updateCourseMutation.isPending}
-            >
-              {updateCourseMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              Salvar Alterações
-            </Button>
           </div>
         </div>
 
-                <Tabs defaultValue="content" className="w-full">
-          <TabsList className="w-full max-w-md grid grid-cols-2">
-            <TabsTrigger value="details">Detalhes do Curso</TabsTrigger>
-            <TabsTrigger value="content">Conteúdo (Aulas)</TabsTrigger>
+        <Tabs defaultValue="modules">
+          <TabsList>
+            <TabsTrigger value="modules">Módulos</TabsTrigger>
+            <TabsTrigger value="details">Detalhes</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="details" className="mt-6 space-y-6">
+          <TabsContent value="details">
             <Card>
               <CardHeader>
-                <CardTitle>Informações Básicas</CardTitle>
-                <CardDescription>
-                  Essas informações aparecem no card do curso.
-                </CardDescription>
+                <CardTitle>Detalhes do Curso</CardTitle>
+                <CardDescription>Edite as informações básicas do curso</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Título do Curso</Label>
+                <div>
+                  <Label>Título</Label>
                   <Input
-                    value={course.title}
-                    onChange={(e) =>
-                      setCourse({ ...course, title: e.target.value })
-                    }
+                    value={course.title ?? ""}
+                    onChange={(e) => setCourse({ ...course!, title: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
+                                <div>
                   <Label>Descrição</Label>
                   <Textarea
-                    value={course.description}
+                    value={course.description ?? ""}
                     onChange={(e) =>
-                      setCourse({ ...course, description: e.target.value })
+                      setCourse({ ...course!, description: e.target.value })
                     }
                     rows={4}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>URL da Imagem de Capa</Label>
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <Input
-                        value={course.coverImage}
-                        onChange={(e) =>
-                          setCourse({ ...course, coverImage: e.target.value })
-                        }
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Cole a URL de uma imagem hospedada.
-                      </p>
-                    </div>
-                    <div className="h-20 w-32 shrink-0 overflow-hidden rounded-md border bg-muted">
-                      {course.coverImage ? (
-                        <img
-                          src={course.coverImage}
-                          className="h-full w-full object-cover"
-                          alt="Preview"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">
-                          Sem imagem
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <div>
+                  <Label>Imagem de Capa (URL)</Label>
+                  <Input
+                    value={course.coverImage ?? ""}
+                    onChange={(e) =>
+                      setCourse({ ...course!, coverImage: e.target.value })
+                    }
+                    placeholder="Cole a URL da imagem de capa"
+                  />
+                </div>
+                <div>
+                  <Label>Autor</Label>
+                  <Input
+                    value={course.author ?? ""}
+                    onChange={(e) =>
+                      setCourse({ ...course!, author: e.target.value })
+                    }
+                    placeholder="Nome do autor"
+                  />
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="content" className="mt-6 space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium">Estrutura do Curso</h3>
+          <TabsContent value="modules">
+            <div className="space-y-6">
+              {(course?.modules ?? []).map((module, moduleIndex) => (
+                <Card key={moduleIndex}>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>
+                      <Input
+                        value={module.title ?? ""}
+                        onChange={(e) =>
+                          handleUpdateModuleTitle(moduleIndex, e.target.value)
+                        }
+                        placeholder="Título do Módulo"
+                      />
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteModule(moduleIndex)}
+                    >
+                      <Trash className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(module.lessons ?? []).map((lesson, lessonIndex) => (
+                      <div
+                        key={lessonIndex}
+                        className="flex flex-col gap-4 border rounded-md p-3"
+                      >
+                        <Input
+                          value={lesson.title ?? ""}
+                          onChange={(e) =>
+                            handleUpdateLesson(
+                              moduleIndex,
+                              lessonIndex,
+                              "title",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Título da Aula"
+                        />
+
+                        <Textarea
+                          value={lesson.description ?? ""}
+                          onChange={(e) =>
+                            handleUpdateLesson(
+                              moduleIndex,
+                              lessonIndex,
+                              "description",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Descrição da Aula"
+                          rows={3}
+                        />
+
+                        <Input
+                          value={lesson.videoUrl ?? ""}
+                          onChange={(e) =>
+                            handleUpdateLesson(
+                              moduleIndex,
+                              lessonIndex,
+                              "videoUrl",
+                              e.target.value
+                            )
+                          }
+                          placeholder="Cole a URL do vídeo hospedado"
+                        />
+
+                        {lesson.videoUrl && (
+                          <video
+                            src={lesson.videoUrl}
+                            controls
+                            className="mt-2 w-full rounded-md border"
+                            onLoadedMetadata={(e) => {
+                              const durationInSeconds = Math.floor(
+                                e.currentTarget.duration || 0
+                              );
+                              if (
+                                Number.isFinite(durationInSeconds) &&
+                                durationInSeconds > 0
+                              ) {
+                                handleUpdateLesson(
+                                  moduleIndex,
+                                  lessonIndex,
+                                  "duration",
+                                  durationInSeconds
+                                );
+                              }
+                            }}
+                          />
+                        )}
+
+                        <div className="flex justify-end">
+                          <Button
+                            onClick={() =>
+                              handleDeleteLesson(moduleIndex, lessonIndex)
+                            }
+                            variant="ghost"
+                            size="icon"
+                          >
+                            <Trash className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    <Button
+                      onClick={() => handleAddLesson(moduleIndex)}
+                      variant="secondary"
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Adicionar Aula
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
               <Button
                 onClick={handleAddModule}
                 variant="secondary"
                 className="gap-2"
-                disabled={createModuleMutation.isPending}
               >
-                {createModuleMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
+                <Plus className="h-4 w-4" />
                 Adicionar Módulo
               </Button>
             </div>
-
-            {(course?.modules ?? []).length === 0 ? (
-              <div className="text-center py-10 border-2 border-dashed rounded-lg text-muted-foreground">
-                Nenhum módulo criado. Comece adicionando um módulo.
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {(course?.modules ?? []).map((module, moduleIndex) => (
-                  <Card key={moduleIndex}>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                      <div>
-                        <Input
-                          value={module.title}
-                          onChange={(e) =>
-                            handleUpdateModuleTitle(moduleIndex, e.target.value)
-                          }
-                          className="font-medium"
-                        />
-                      </div>
-                      <Button
-                        onClick={() => handleDeleteModule(moduleIndex)}
-                        variant="ghost"
-                        size="icon"
-                      >
-                        <Trash className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {(module.lessons ?? []).length === 0 ? (
-                        <p className="text-muted-foreground text-sm">
-                          Nenhuma aula neste módulo.
-                        </p>
-                      ) : (
-                        (module.lessons ?? []).map((lesson, lessonIndex) => (
-                          <div
-                            key={lessonIndex}
-                            className="flex flex-col gap-4 border rounded-md p-3"
-                          >
-                            <Input
-                              value={lesson.title}
-                              onChange={(e) =>
-                                handleUpdateLesson(
-                                  moduleIndex,
-                                  lessonIndex,
-                                  "title",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Título da Aula"
-                            />
-
-                            <Textarea
-                              value={lesson.description || ""}
-                              onChange={(e) =>
-                                handleUpdateLesson(
-                                  moduleIndex,
-                                  lessonIndex,
-                                  "description",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Descrição da Aula"
-                              rows={3}
-                            />
-
-                            <Textarea
-                              value={lesson.materials || ""}
-                              onChange={(e) =>
-                                handleUpdateLesson(
-                                  moduleIndex,
-                                  lessonIndex,
-                                  "materials",
-                                  e.target.value
-                                )
-                              }
-                              placeholder="Materiais complementares (links, PDFs, etc)"
-                              rows={2}
-                            />
-
-                            <div className="space-y-1">
-                              <Input
-                                value={lesson.videoUrl}
-                                onChange={(e) =>
-                                  handleUpdateLesson(
-                                    moduleIndex,
-                                    lessonIndex,
-                                    "videoUrl",
-                                    e.target.value
-                                  )
-                                }
-                                placeholder="Cole a URL do vídeo hospedado"
-                              />
-                              {lesson.videoUrl && (
-                                <video
-                                  src={lesson.videoUrl}
-                                  controls
-                                  className="mt-2 w-full rounded-md border"
-                                  onLoadedMetadata={(e) => {
-                                    const durationInSeconds = Math.floor(
-                                      e.currentTarget.duration || 0
-                                    );
-                                    if (
-                                      Number.isFinite(durationInSeconds) &&
-                                      durationInSeconds > 0
-                                    ) {
-                                      handleUpdateLesson(
-                                        moduleIndex,
-                                        lessonIndex,
-                                        "duration",
-                                        durationInSeconds
-                                      );
-                                    }
-                                  }}
-                                />
-                              )}
-                            </div>
-
-                            <div className="flex justify-end">
-                              <Button
-                                onClick={() =>
-                                  handleDeleteLesson(moduleIndex, lessonIndex)
-                                }
-                                variant="ghost"
-                                size="icon"
-                              >
-                                <Trash className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                      <Button
-                        onClick={() => handleAddLesson(moduleIndex)}
-                        variant="secondary"
-                        className="gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Adicionar Aula
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
           </TabsContent>
         </Tabs>
       </div>

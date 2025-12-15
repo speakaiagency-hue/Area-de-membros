@@ -4,6 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/lib/auth";
+
+// Páginas
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth";
 import DashboardHome from "@/pages/dashboard";
@@ -13,7 +15,14 @@ import AdminDashboard from "@/pages/admin";
 import AdminCourseEditor from "@/pages/admin-course-edit";
 import ProfilePage from "@/pages/profile";
 
-function ProtectedRoute({ component: Component, adminOnly = false }: { component: React.ComponentType, adminOnly?: boolean }) {
+// Componente para proteger rotas
+function ProtectedRoute({
+  component: Component,
+  adminOnly = false,
+}: {
+  component: React.ComponentType;
+  adminOnly?: boolean;
+}) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -30,6 +39,7 @@ function ProtectedRoute({ component: Component, adminOnly = false }: { component
   return <Component />;
 }
 
+// Router principal
 function Router() {
   const { user, isLoading } = useAuth();
 
@@ -43,10 +53,12 @@ function Router() {
 
   return (
     <Switch>
+      {/* Página de autenticação */}
       <Route path="/auth">
         {user ? <Redirect to="/" /> : <AuthPage />}
       </Route>
-      
+
+      {/* Rotas protegidas */}
       <Route path="/">
         <ProtectedRoute component={DashboardHome} />
       </Route>
@@ -71,12 +83,15 @@ function Router() {
         <ProtectedRoute component={AdminCourseEditor} adminOnly />
       </Route>
 
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
+      {/* Fallback para 404 */}
+      <Route>
+        <NotFound />
+      </Route>
     </Switch>
   );
 }
 
+// App principal
 function App() {
   return (
     <QueryClientProvider client={queryClient}>

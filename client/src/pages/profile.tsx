@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { User, Mail, Shield, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { updateProfile } from "@/biblioteca/api"; // integração com backend
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -21,12 +22,23 @@ export default function ProfilePage() {
   });
 
   const handleSave = async () => {
-    // TODO: Implementar atualização de perfil no backend
-    toast({
-      title: "Perfil atualizado",
-      description: "Suas informações foram salvas com sucesso.",
-    });
-    setIsEditing(false);
+    try {
+      await updateProfile({
+        name: formData.name,
+        avatar: formData.avatar,
+      });
+      toast({
+        title: "Perfil atualizado",
+        description: "Suas informações foram salvas com sucesso.",
+      });
+      setIsEditing(false);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar seu perfil.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!user) return null;

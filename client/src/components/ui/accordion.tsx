@@ -25,12 +25,22 @@ const AccordionTrigger = React.forwardRef<
   <AccordionPrimitive.Header className="flex">
     <AccordionPrimitive.Trigger
       ref={ref}
+      aria-labelledby="accordion-trigger-title"
+      aria-describedby="accordion-trigger-description"
       className={cn(
         "flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline text-left [&[data-state=open]>svg]:rotate-180",
         className
       )}
       {...props}
     >
+      {/* Elementos obrigatórios para acessibilidade */}
+      <span id="accordion-trigger-title" className="sr-only">
+        Título do item do accordion
+      </span>
+      <span id="accordion-trigger-description" className="sr-only">
+        Descrição do item do accordion
+      </span>
+
       {children}
       <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
     </AccordionPrimitive.Trigger>
@@ -44,6 +54,8 @@ const AccordionContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <AccordionPrimitive.Content
     ref={ref}
+    aria-labelledby="accordion-trigger-title"
+    aria-describedby="accordion-trigger-description"
     className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
     {...props}
   >

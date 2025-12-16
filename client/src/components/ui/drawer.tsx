@@ -38,6 +38,8 @@ const DrawerContent = React.forwardRef<
     <DrawerOverlay />
     <DrawerPrimitive.Content
       ref={ref}
+      aria-labelledby="drawer-title"
+      aria-describedby="drawer-description"
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
         className
@@ -46,10 +48,12 @@ const DrawerContent = React.forwardRef<
     >
       <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
 
-      {/* Garantindo acessibilidade: sempre renderiza Title e Description ocultos */}
+      {/* Elementos obrigatórios para acessibilidade */}
       <DrawerHeader>
-        <DrawerTitle className="sr-only">Título do drawer</DrawerTitle>
-        <DrawerDescription className="sr-only">
+        <DrawerTitle id="drawer-title" className="sr-only">
+          Título do drawer
+        </DrawerTitle>
+        <DrawerDescription id="drawer-description" className="sr-only">
           Descrição do drawer
         </DrawerDescription>
       </DrawerHeader>

@@ -8,7 +8,7 @@ export type CourseWithContent = Course & {
   modules: (Module & { lessons: Lesson[] })[];
 };
 
-// Auth API
+// Base fetch with credentials
 async function fetchWithCredentials(url: string, options?: RequestInit) {
   const response = await fetch(API_URL + url, {
     ...options,
@@ -27,9 +27,9 @@ async function fetchWithCredentials(url: string, options?: RequestInit) {
   return response.json();
 }
 
-// -------------------- AUTH HOOKS --------------------
+/* ==================== AUTH HOOKS ==================== */
 export function useCurrentUser() {
-  return useQuery({
+  return useQuery<User | null>({
     queryKey: ["currentUser"],
     queryFn: () => fetchWithCredentials("/api/auth/me"),
     retry: false,
@@ -46,7 +46,7 @@ export function useLogin() {
         body: JSON.stringify({ email, password }),
       });
     },
-    onSuccess: (user) => {
+    onSuccess: (user: User) => {
       queryClient.setQueryData(["currentUser"], user);
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
@@ -63,7 +63,7 @@ export function useRegister() {
         body: JSON.stringify({ name, email, password }),
       });
     },
-    onSuccess: (user) => {
+    onSuccess: (user: User) => {
       queryClient.setQueryData(["currentUser"], user);
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
@@ -86,7 +86,7 @@ export function useLogout() {
   });
 }
 
-// -------------------- COURSE HOOKS --------------------
+/* ==================== COURSE HOOKS ==================== */
 export function useCourses() {
   return useQuery<CourseWithContent[]>({
     queryKey: ["courses"],
@@ -138,7 +138,7 @@ export function useDeleteCourse() {
   });
 }
 
-// -------------------- COMMUNITY VIDEO HOOKS --------------------
+/* ==================== COMMUNITY VIDEO HOOKS ==================== */
 export function useCommunityVideos() {
   return useQuery<CommunityVideo[]>({
     queryKey: ["communityVideos"],
@@ -190,7 +190,7 @@ export function useDeleteCommunityVideo() {
   });
 }
 
-// -------------------- ENROLLMENT HOOKS --------------------
+/* ==================== ENROLLMENT HOOKS ==================== */
 export function useEnrollments() {
   return useQuery<Enrollment[]>({
     queryKey: ["enrollments"],
@@ -228,7 +228,7 @@ export function useCompleteLesson() {
   });
 }
 
-// -------------------- MODULE HOOKS --------------------
+/* ==================== MODULE HOOKS ==================== */
 export function useCreateModule() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -273,7 +273,7 @@ export function useDeleteModule() {
   });
 }
 
-// -------------------- LESSON HOOKS --------------------
+/* ==================== LESSON HOOKS ==================== */
 export function useCreateLesson() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -291,4 +291,59 @@ export function useCreateLesson() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"]
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+export function useUpdateLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { title?: string; videoUrl?: string; pdfUrl?: string; duration?: string; order?: number } }) => {
+      return fetchWithCredentials(`/api/lessons/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+export function useDeleteLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return fetchWithCredentials(`/api/lessons/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+/* ==================== PROFILE + WEBHOOK ==================== */
+export async function updateProfile(data: { name: string; avatar: string }) {
+  return fetchWithCredentials("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function useSimulateWebhook() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { email: string; courseId: string }) => {
+      return fetchWithCredentials("/api/webhooks/kiwify", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+    },
+  });
+}

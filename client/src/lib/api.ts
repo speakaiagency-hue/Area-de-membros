@@ -280,3 +280,19 @@ export async function updateProfile(data: { name: string; avatar: string }) {
     body: JSON.stringify(data),
   });
 }
+
+// ✅ Novo: Simulate Webhook (Kiwify)
+export function useSimulateWebhook() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { email: string; courseId: string }) => {
+      return fetchWithCredentials("/api/webhooks/kiwify", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+    },
+  });
+}

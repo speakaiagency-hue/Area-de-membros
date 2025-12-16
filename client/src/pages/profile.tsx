@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { User, Mail, Shield, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile } from "@/biblioteca/api"; // integração com backend
+import { updateProfile } from "@/lib/api"; // ✅ caminho corrigido
 
 export default function ProfilePage() {
   const { user } = useAuth();

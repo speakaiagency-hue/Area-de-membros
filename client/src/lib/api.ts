@@ -27,7 +27,7 @@ async function fetchWithCredentials(url: string, options?: RequestInit) {
   return response.json();
 }
 
-// Auth hooks
+// -------------------- AUTH HOOKS --------------------
 export function useCurrentUser() {
   return useQuery({
     queryKey: ["currentUser"],
@@ -86,7 +86,7 @@ export function useLogout() {
   });
 }
 
-// Course hooks
+// -------------------- COURSE HOOKS --------------------
 export function useCourses() {
   return useQuery<CourseWithContent[]>({
     queryKey: ["courses"],
@@ -138,7 +138,7 @@ export function useDeleteCourse() {
   });
 }
 
-// Community Video hooks
+// -------------------- COMMUNITY VIDEO HOOKS --------------------
 export function useCommunityVideos() {
   return useQuery<CommunityVideo[]>({
     queryKey: ["communityVideos"],
@@ -190,7 +190,7 @@ export function useDeleteCommunityVideo() {
   });
 }
 
-// Enrollment hooks
+// -------------------- ENROLLMENT HOOKS --------------------
 export function useEnrollments() {
   return useQuery<Enrollment[]>({
     queryKey: ["enrollments"],
@@ -228,7 +228,7 @@ export function useCompleteLesson() {
   });
 }
 
-// Module hooks
+// -------------------- MODULE HOOKS --------------------
 export function useCreateModule() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -273,26 +273,22 @@ export function useDeleteModule() {
   });
 }
 
-// ✅ Novo: Update Profile
-export async function updateProfile(data: { name: string; avatar: string }) {
-  return fetchWithCredentials("/api/profile", {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
-}
-
-// ✅ Novo: Simulate Webhook (Kiwify)
-export function useSimulateWebhook() {
+// -------------------- LESSON HOOKS --------------------
+export function useCreateLesson() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload: { email: string; courseId: string }) => {
-      return fetchWithCredentials("/api/webhooks/kiwify", {
+    mutationFn: async (lesson: {
+      moduleId: string;
+      title: string;
+      videoUrl?: string;
+      pdfUrl?: string;
+      duration?: string;
+      order: number;
+    }) => {
+      return fetchWithCredentials("/api/lessons", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(lesson),
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
-    },
-  });
-}
+      queryClient.invalidateQueries({ queryKey: ["courses"]

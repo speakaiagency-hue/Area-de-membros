@@ -41,6 +41,7 @@ export default function ProfilePage() {
           </p>
         </div>
 
+        {/* Informações Pessoais */}
         <Card>
           <CardHeader>
             <CardTitle>Informações Pessoais</CardTitle>
@@ -216,11 +217,9 @@ export default function ProfilePage() {
                 <div className="text-2xl font-bold">0</div>
                 <div className="text-sm text-muted-foreground">Aulas Concluídas</div>
               </div>
-                            <div className="p-4 border rounded-lg">
+              <div className="p-4 border rounded-lg">
                 <div className="text-2xl font-bold">0%</div>
-                <div className="text-sm text-muted-foreground">
-                  Progresso Médio
-                </div>
+                <div className="text-sm text-muted-foreground">Progresso Médio</div>
               </div>
             </div>
           </CardContent>

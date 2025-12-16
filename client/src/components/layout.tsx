@@ -8,7 +8,6 @@ import {
   Settings, 
   LogOut, 
   Menu, 
-  X,
   User as UserIcon,
   ShieldCheck,
   ExternalLink,
@@ -24,7 +23,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -78,15 +77,15 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="mt-8 px-3">
-            <div className="rounded-lg bg-sidebar-accent/50 p-4 border border-sidebar-border">
-                <h4 className="text-sm font-medium text-sidebar-foreground mb-2">Ferramentas SpeakAI</h4>
-                <p className="text-xs text-sidebar-foreground/60 mb-3">Acesse nossa suíte completa de ferramentas.</p>
-                <a href="https://speakai.com.br" target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" className="w-full gap-2" variant="secondary">
-                        Acessar <ExternalLink className="h-3 w-3" />
-                    </Button>
-                </a>
-            </div>
+          <div className="rounded-lg bg-sidebar-accent/50 p-4 border border-sidebar-border">
+            <h4 className="text-sm font-medium text-sidebar-foreground mb-2">Ferramentas SpeakAI</h4>
+            <p className="text-xs text-sidebar-foreground/60 mb-3">Acesse nossa suíte completa de ferramentas.</p>
+            <a href="https://speakai.com.br" target="_blank" rel="noopener noreferrer">
+              <Button size="sm" className="w-full gap-2" variant="secondary">
+                Acessar <ExternalLink className="h-3 w-3" />
+              </Button>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -100,7 +99,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <span className="truncate text-sm font-medium text-sidebar-foreground">{user.name}</span>
             <span className="truncate text-xs text-sidebar-foreground/60">{user.email}</span>
           </div>
-          <Button variant="ghost" size="icon" className="ml-auto h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground" onClick={() => logoutMutation.mutate()}>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="ml-auto h-8 w-8 text-sidebar-foreground/70 hover:text-sidebar-foreground" 
+            onClick={() => logoutMutation.mutate()}
+          >
             <LogOut className="h-4 w-4" />
           </Button>
         </div>
@@ -126,6 +130,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-64 border-r-sidebar-border bg-sidebar text-sidebar-foreground">
+              <SheetHeader>
+                <SheetTitle>Menu de Navegação</SheetTitle>
+                <SheetDescription>Selecione uma opção para navegar.</SheetDescription>
+              </SheetHeader>
               <SidebarContent />
             </SheetContent>
           </Sheet>

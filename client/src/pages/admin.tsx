@@ -1,14 +1,37 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { useCourses, useCreateCourse, useDeleteCourse, useSimulateWebhook } from "@/lib/api";
 import { DashboardLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Plus, Upload, Edit, Trash, CreditCard, Loader2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -20,7 +43,7 @@ export default function AdminDashboard() {
   const deleteCourseMutation = useDeleteCourse();
   const simulateWebhookMutation = useSimulateWebhook();
   const { toast } = useToast();
-  
+
   const [webhookEmail, setWebhookEmail] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState("");
   const [, setLocation] = useLocation();
@@ -29,7 +52,9 @@ export default function AdminDashboard() {
   const [isNewCourseOpen, setIsNewCourseOpen] = useState(false);
   const [newCourseTitle, setNewCourseTitle] = useState("");
   const [newCourseDesc, setNewCourseDesc] = useState("");
-  const [newCourseCover, setNewCourseCover] = useState("https://placehold.co/600x400/2563eb/white?text=Nova+Capa");
+  const [newCourseCover, setNewCourseCover] = useState(
+    "https://placehold.co/600x400/2563eb/white?text=Nova+Capa"
+  );
 
   if (user?.role !== "admin") {
     return (
@@ -45,7 +70,10 @@ export default function AdminDashboard() {
   const handleSimulateWebhook = async () => {
     if (webhookEmail && selectedCourseId) {
       try {
-        await simulateWebhookMutation.mutateAsync({ email: webhookEmail, courseId: selectedCourseId });
+        await simulateWebhookMutation.mutateAsync({
+          email: webhookEmail,
+          courseId: selectedCourseId,
+        });
         toast({
           title: "Webhook Recebido",
           description: `Acesso concedido para ${webhookEmail}`,
@@ -69,7 +97,7 @@ export default function AdminDashboard() {
           title: "Sucesso",
           description: "Curso excluído com sucesso.",
         });
-      } catch (error) {
+      } catch {
         toast({
           title: "Erro",
           description: "Não foi possível excluir o curso.",
@@ -89,18 +117,18 @@ export default function AdminDashboard() {
         coverImage: newCourseCover,
         author: user?.name || "Admin",
       });
-      
+
       toast({
         title: "Sucesso",
         description: "Novo curso criado.",
       });
-      
+
       setIsNewCourseOpen(false);
       setNewCourseTitle("");
       setNewCourseDesc("");
-      
+
       setLocation(`/admin/course/${result.id}`);
-    } catch (error) {
+    } catch {
       toast({
         title: "Erro",
         description: "Não foi possível criar o curso.",
@@ -117,7 +145,7 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold tracking-tight">Painel Administrativo</h1>
             <p className="text-muted-foreground mt-2">Gerencie cursos, conteúdos e integrações.</p>
           </div>
-          
+
           <Dialog open={isNewCourseOpen} onOpenChange={setIsNewCourseOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
@@ -135,16 +163,16 @@ export default function AdminDashboard() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label>Título do Curso</Label>
-                  <Input 
-                    placeholder="Ex: Curso Completo de Design" 
+                  <Input
+                    placeholder="Ex: Curso Completo de Design"
                     value={newCourseTitle}
                     onChange={(e) => setNewCourseTitle(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Descrição Curta</Label>
-                  <Textarea 
-                    placeholder="O que os alunos vão aprender?" 
+                  <Textarea
+                    placeholder="O que os alunos vão aprender?"
                     value={newCourseDesc}
                     onChange={(e) => setNewCourseDesc(e.target.value)}
                   />
@@ -154,11 +182,7 @@ export default function AdminDashboard() {
                   <div className="space-y-3">
                     {newCourseCover && (
                       <div className="relative w-full h-40 rounded-lg overflow-hidden border">
-                        <img 
-                          src={newCourseCover} 
-                          alt="Preview" 
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={newCourseCover} alt="Preview" className="w-full h-full object-cover" />
                       </div>
                     )}
                     <div className="relative">
@@ -173,7 +197,7 @@ export default function AdminDashboard() {
                               toast({
                                 title: "Arquivo muito grande",
                                 description: "A imagem deve ter no máximo 5MB",
-                                variant: "destructive"
+                                variant: "destructive",
                               });
                               return;
                             }
@@ -190,15 +214,17 @@ export default function AdminDashboard() {
                         Escolher Imagem de Capa
                       </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Recomendado: 600x400px (máx. 5MB)
-                    </p>
+                    <p className="text-xs text-muted-foreground">Recomendado: 600x400px (máx. 5MB)</p>
                   </div>
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsNewCourseOpen(false)}>Cancelar</Button>
-                <Button onClick={handleCreateCourse} disabled={!newCourseTitle}>Criar Curso</Button>
+                <Button variant="outline" onClick={() => setIsNewCourseOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleCreateCourse} disabled={!newCourseTitle}>
+                  Criar Curso
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -208,9 +234,10 @@ export default function AdminDashboard() {
           <TabsList>
             <TabsTrigger value="courses">Cursos</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="integrations">Integrações (Kiwifi)</TabsTrigger>
+            <TabsTrigger value="integrations">Integrações (Kiwify)</TabsTrigger>
           </TabsList>
 
+          {/* Cursos */}
           <TabsContent value="courses" className="space-y-4">
             <Card>
               <CardHeader>
@@ -218,10 +245,12 @@ export default function AdminDashboard() {
                 <CardDescription>Gerencie o conteúdo visível para seus alunos.</CardDescription>
               </CardHeader>
               <CardContent>
-                {!courses || courses.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Nenhum curso cadastrado.
+                {isLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
+                ) : !courses || courses.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">Nenhum curso cadastrado.</div>
                 ) : (
                   <Table>
                     <TableHeader>
@@ -231,7 +260,7 @@ export default function AdminDashboard() {
                         <TableHead>Módulos</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
-                                       </TableHeader>
+                    </TableHeader>
                     <TableBody>
                       {(courses ?? []).map((course) => (
                         <TableRow key={course.id}>
@@ -242,20 +271,12 @@ export default function AdminDashboard() {
                               alt={course.title ?? "Capa do curso"}
                             />
                           </TableCell>
-                          <TableCell className="font-medium">
-                            {course.title ?? ""}
-                          </TableCell>
-                          <TableCell>
-                            {(course.modules ?? []).length}
-                          </TableCell>
+                          <TableCell className="font-medium">{course.title ?? ""}</TableCell>
+                          <TableCell>{(course.modules ?? []).length}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Link href={`/admin/course/${course.id}`}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Editar Conteúdo"
-                                >
+                                <Button variant="ghost" size="icon" title="Editar Conteúdo">
                                   <Edit className="h-4 w-4" />
                                 </Button>
                               </Link>
@@ -263,9 +284,7 @@ export default function AdminDashboard() {
                                 variant="ghost"
                                 size="icon"
                                 className="text-destructive hover:bg-destructive/10"
-                                onClick={() =>
-                                  handleDeleteCourse(course.id, course.title ?? "")
-                                }
+                                onClick={() => handleDeleteCourse(course.id, course.title ?? "")}
                                 title="Excluir Curso"
                               >
                                 <Trash className="h-4 w-4" />
@@ -281,69 +300,63 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="integrations">
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Configuração Webhook Kiwifi</CardTitle>
-                  <CardDescription>
-                    URL para receber notificações de venda.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-3 bg-muted rounded-md text-xs font-mono break-all border border-dashed border-primary/30">
-                    https://api.seusite.com/webhooks/kiwifi
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Copie esta URL e configure no painel da Kiwifi para liberar
-                    o acesso automaticamente após o pagamento.
-                  </p>
-                </CardContent>
-              </Card>
+          {/* Usuários (placeholder) */}
+          <TabsContent value="users" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Usuários</CardTitle>
+                <CardDescription>Gerencie os usuários da plataforma</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">Funcionalidade em desenvolvimento…</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              <Card className="border-primary/20 bg-primary/5">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-primary" />
-                    Simular Compra (Teste)
-                  </CardTitle>
-                  <CardDescription>
-                    Use esta ferramenta para testar a liberação automática sem
-                    pagar.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Email do Usuário</Label>
-                    <Input
-                      placeholder="ex: aluno@email.com"
-                      value={webhookEmail}
-                      onChange={(e) => setWebhookEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Curso para Liberar</Label>
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                      value={selectedCourseId}
-                      onChange={(e) => setSelectedCourseId(e.target.value)}
-                    >
-                      <option value="">Selecione um curso...</option>
-                      {(courses ?? []).map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.title ?? ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button onClick={handleSimulateWebhook} className="w-full">
-                    Simular Pagamento Aprovado
-                  </Button>
-                </CardFooter>
-              </Card>
-            </div>
+          {/* Integrações (Webhook Kiwify) */}
+          <TabsContent value="integrations" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Simular Webhook Kiwify</CardTitle>
+                <CardDescription>Teste a integração enviando um webhook manualmente</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Email do Usuário</Label>
+                  <Input
+                    placeholder="usuario@exemplo.com"
+                    value={webhookEmail}
+                    onChange={(e) => setWebhookEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Curso</Label>
+                  <select
+                    className="w-full border rounded p-2"
+                    value={selectedCourseId}
+                    onChange={(e) => setSelectedCourseId(e.target.value)}
+                  >
+                    <option value="">Selecione um curso</option>
+                    {courses?.map((course) => (
+                      <option key={course.id} value={course.id}>
+                        {course.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  onClick={handleSimulateWebhook}
+                  disabled={!webhookEmail || !selectedCourseId}
+                  className="gap-2"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Simular Webhook
+                </Button>
+              </CardContent>
+              <CardFooter className="text-xs text-muted-foreground">
+                Dica: configure KIWIFY_PRODUCT_MAPPING no backend para mapear Product.id → courseId.
+              </CardFooter>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

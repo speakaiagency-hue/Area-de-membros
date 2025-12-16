@@ -73,8 +73,7 @@ export default function CoursePlayer() {
     }
   };
 
-  const isCompleted = (lessonId: string) =>
-    completedLessons.includes(lessonId);
+  const isCompleted = (lessonId: string) => completedLessons.includes(lessonId);
 
   return (
     <DashboardLayout>
@@ -128,9 +127,7 @@ export default function CoursePlayer() {
                   <p className="text-muted-foreground mt-1">
                     Módulo:{" "}
                     {(course.modules ?? []).find((m) =>
-                      (m.lessons ?? []).some(
-                        (l) => l.id === activeLesson?.id
-                      )
+                      (m.lessons ?? []).some((l) => l.id === activeLesson?.id)
                     )?.title}
                   </p>
                 </div>
@@ -162,9 +159,7 @@ export default function CoursePlayer() {
               <Separator />
 
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">
-                  Materiais Complementares
-                </h3>
+                <h3 className="font-semibold text-lg">Materiais Complementares</h3>
                 {activeLesson?.pdfUrl ? (
                   <div className="flex items-center p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors cursor-pointer group">
                     <div className="h-10 w-10 rounded bg-red-100 text-red-600 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform">
@@ -172,12 +167,17 @@ export default function CoursePlayer() {
                     </div>
                     <div className="flex-1">
                       <div className="font-medium">Resumo da Aula (PDF)</div>
-                      <div className="text-xs text-muted-foreground">
-                        Clique para baixar
-                      </div>
+                      <div className="text-xs text-muted-foreground">Clique para baixar</div>
                     </div>
-                    <Button size="icon" variant="ghost">
-                      <Download className="h-4 w-4" />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      asChild
+                      aria-label="Baixar PDF da aula"
+                    >
+                      <a href={activeLesson.pdfUrl} download>
+                        <Download className="h-4 w-4" />
+                      </a>
                     </Button>
                   </div>
                 ) : (
@@ -215,7 +215,7 @@ export default function CoursePlayer() {
                 defaultValue={(course.modules ?? []).map((m) => m.id)}
                 className="w-full"
               >
-                               {(course.modules ?? []).map((module) => (
+                {(course.modules ?? []).map((module) => (
                   <AccordionItem
                     key={module.id}
                     value={module.id}

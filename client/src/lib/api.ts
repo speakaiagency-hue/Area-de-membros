@@ -273,63 +273,10 @@ export function useDeleteModule() {
   });
 }
 
-// Lesson hooks
-export function useCreateLesson() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (lesson: { moduleId: string; title: string; videoUrl: string; duration: string; order: number; pdfUrl?: string }) => {
-      return fetchWithCredentials("/api/lessons", {
-        method: "POST",
-        body: JSON.stringify(lesson),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-    },
-  });
-}
-
-export function useUpdateLesson() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { moduleId: string; title: string; videoUrl: string; duration: string; order: number; pdfUrl?: string } }) => {
-      return fetchWithCredentials(`/api/lessons/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-    },
-  });
-}
-
-export function useDeleteLesson() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return fetchWithCredentials(`/api/lessons/${id}`, {
-        method: "DELETE",
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-    },
-  });
-}
-
-// Webhook simulation (admin only)
-export function useSimulateWebhook() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ email, courseId }: { email: string; courseId: string }) => {
-      return fetchWithCredentials("/api/webhook/kiwify", {
-        method: "POST",
-        body: JSON.stringify({ email, courseId }),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
-    },
+// ✅ Novo: Update Profile
+export async function updateProfile(data: { name: string; avatar: string }) {
+  return fetchWithCredentials("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify(data),
   });
 }

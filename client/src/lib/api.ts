@@ -3,12 +3,12 @@ import type { User, Course, Module, Lesson, CommunityVideo, Enrollment } from "@
 
 const API_URL = "https://area-de-membros-niuz.onrender.com";
 
-// Type for Course with modules and lessons
+/* ==================== TYPES ==================== */
 export type CourseWithContent = Course & {
   modules: (Module & { lessons: Lesson[] })[];
 };
 
-// Base fetch with credentials
+/* ==================== BASE FETCH ==================== */
 async function fetchWithCredentials(url: string, options?: RequestInit) {
   const response = await fetch(API_URL + url, {
     ...options,
@@ -21,10 +21,12 @@ async function fetchWithCredentials(url: string, options?: RequestInit) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: "Request failed" }));
-    throw new Error(error.message || "Request failed");
+    throw new Error(error.message || `Request failed (${response.status})`);
   }
 
-  return response.json();
+  // Suporta respostas sem body (ex.: 204)
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 }
 
 /* ==================== AUTH HOOKS ==================== */
@@ -75,9 +77,7 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      return fetchWithCredentials("/api/auth/logout", {
-        method: "POST",
-      });
+      return fetchWithCredentials("/api/auth/logout", { method: "POST" });
     },
     onSuccess: () => {
       queryClient.setQueryData(["currentUser"], null);
@@ -112,7 +112,7 @@ export function useCreateCourse() {
 export function useUpdateCourse() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Course> & { modules?: any } }) => {
       return fetchWithCredentials(`/api/courses/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
@@ -128,9 +128,7 @@ export function useDeleteCourse() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      return fetchWithCredentials(`/api/courses/${id}`, {
-        method: "DELETE",
-      });
+      return fetchWithCredentials(`/api/courses/${id}`, { method: "DELETE" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courses"] });
@@ -149,7 +147,13 @@ export function useCommunityVideos() {
 export function useCreateCommunityVideo() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (video: { title: string; description: string; videoUrl: string; authorName: string; authorAvatar?: string }) => {
+    mutationFn: async (video: {
+      title: string;
+      description: string;
+      videoUrl: string;
+      authorName: string;
+      authorAvatar?: string;
+    }) => {
       return fetchWithCredentials("/api/community-videos", {
         method: "POST",
         body: JSON.stringify(video),
@@ -164,7 +168,7 @@ export function useCreateCommunityVideo() {
 export function useUpdateCommunityVideo() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<CommunityVideo> }) => {
       return fetchWithCredentials(`/api/community-videos/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
@@ -180,9 +184,7 @@ export function useDeleteCommunityVideo() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      return fetchWithCredentials(`/api/community-videos/${id}`, {
-        method: "DELETE",
-      });
+      return fetchWithCredentials(`/api/community-videos/${id}`, { method: "DELETE" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["communityVideos"] });
@@ -206,6 +208,18 @@ export function useCreateEnrollment() {
         method: "POST",
         body: JSON.stringify({ courseId }),
       });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+    },
+  });
+}
+
+export function useDeleteEnrollment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (enrollmentId: string) => {
+      return fetchWithCredentials(`/api/enrollments/${enrollmentId}`, { method: "DELETE" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["enrollments"] });
@@ -263,9 +277,7 @@ export function useDeleteModule() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      return fetchWithCredentials(`/api/modules/${id}`, {
-        method: "DELETE",
-      });
+      return fetchWithCredentials(`/api/modules/${id}`, { method: "DELETE" });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["courses"] });
@@ -277,7 +289,14 @@ export function useDeleteModule() {
 export function useCreateLesson() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (lesson: { moduleId: string; title: string; order: number; videoUrl?: string; pdfUrl?: string; duration?: number }) => {
+    mutationFn: async (lesson: {
+      moduleId: string;
+      title: string;
+      order: number;
+      videoUrl?: string;
+      pdfUrl?: string;
+      duration?: number;
+    }) => {
       return fetchWithCredentials("/api/lessons", {
         method: "POST",
         body: JSON.stringify(lesson),
@@ -289,4 +308,46 @@ export function useCreateLesson() {
   });
 }
 
-export
+export function useUpdateLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Lesson> & { order?: number } }) => {
+      return fetchWithCredentials(`/api/lessons/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+export function useDeleteLesson() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return fetchWithCredentials(`/api/lessons/${id}`, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}
+
+/* ==================== PROFILE ==================== */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { name?: string; avatar?: string }) => {
+      return fetchWithCredentials("/api/profile", {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      });
+    },
+    onSuccess: (user: User) => {
+      queryClient.setQueryData(["currentUser"], user);
+      queryClient.invalidateQueries({ queryKey: ["courses"] });
+    },
+  });
+}

@@ -24,7 +24,7 @@ async function fetchWithCredentials(url: string, options?: RequestInit) {
     throw new Error(error.message || `Request failed (${response.status})`);
   }
 
-  // Suporta respostas sem body (ex.: 204)
+  // suporta respostas sem body (ex.: 204)
   const text = await response.text();
   return text ? JSON.parse(text) : null;
 }
@@ -112,7 +112,7 @@ export function useCreateCourse() {
 export function useUpdateCourse() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<Course> & { modules?: any } }) => {
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
       return fetchWithCredentials(`/api/courses/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),

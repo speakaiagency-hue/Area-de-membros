@@ -20,7 +20,15 @@ export async function registerRoutes(
   // =========================
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { email, password, name } = req.body;
+      const parsed = z
+        .object({
+          email: z.string().email(),
+          password: z.string().min(6),
+          name: z.string().min(1),
+        })
+        .parse(req.body);
+
+      const { email, password, name } = parsed;
 
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser) {
@@ -57,7 +65,14 @@ export async function registerRoutes(
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
+      const parsed = z
+        .object({
+          email: z.string().email(),
+          password: z.string().min(6),
+        })
+        .parse(req.body);
+
+      const { email, password } = parsed;
 
       const user = await storage.getUserByEmail(email);
       if (!user) {
@@ -190,6 +205,11 @@ export async function registerRoutes(
         // Delete removed modules
         for (const module of existingModules) {
           if (!newModuleIds.has(module.id)) {
+            // delete lessons of this removed module first
+            const lessonsToDelete = await storage.getLessonsByModule(module.id);
+            for (const lesson of lessonsToDelete) {
+              await storage.deleteLesson(lesson.id);
+            }
             await storage.deleteModule(module.id);
           }
         }
@@ -252,37 +272,25 @@ export async function registerRoutes(
   });
 
   // =========================
-  // 🗑️ Delete Course (with cascade)
+  // 🗑️ Delete Course (cascade)
   // =========================
   app.delete("/api/courses/:id", requireAdmin, async (req, res) => {
     try {
       const { id } = req.params;
 
-      // Excluir aulas vinculadas aos módulos do curso
+      // get all modules of the course
       const modules = await storage.getModulesByCourse(id);
+
+      // delete all lessons of each module, then delete the module
       for (const module of modules) {
-        // Se existir método dedicado:
-        if (typeof (storage as any).deleteLessonsByModule === "function") {
-          await (storage as any).deleteLessonsByModule(module.id);
-        } else {
-          // Fallback: apagar uma a uma
-          const lessons = await storage.getLessonsByModule(module.id);
-          for (const lesson of lessons) {
-            await storage.deleteLesson(lesson.id);
-          }
+        const lessons = await storage.getLessonsByModule(module.id);
+        for (const lesson of lessons) {
+          await storage.deleteLesson(lesson.id);
         }
+        await storage.deleteModule(module.id);
       }
 
-      // Excluir módulos vinculados ao curso
-      if (typeof (storage as any).deleteModulesByCourse === "function") {
-        await (storage as any).deleteModulesByCourse(id);
-      } else {
-        for (const module of modules) {
-          await storage.deleteModule(module.id);
-        }
-      }
-
-      // Excluir o curso
+      // finally delete the course
       const deletedCourse = await storage.deleteCourse(id);
       if (!deletedCourse) {
         return res.status(404).json({ message: "Course not found" });
@@ -296,12 +304,12 @@ export async function registerRoutes(
   });
 
   // =========================
-  // 📦 (Opcional) Outras rotas úteis
+  // 🎥 Community (placeholder)
   // =========================
-  // Observação: mantenho apenas as rotas necessárias para seu fluxo atual.
-  // Se seu client usa /api/enrollments ou /api/lessons/:id/complete,
-  // podemos adicionar aqui conforme seu storage.
+  // Se você estiver usando vídeos da comunidade, aqui é onde
+  // você adicionaria rotas usando insertCommunityVideoSchema.
+  // Mantive sem implementação para não introduzir mudanças não solicitadas.
 
-  // Finaliza: retorna o servidor HTTP já inicializado
+  // Done: return server
   return httpServer;
 }

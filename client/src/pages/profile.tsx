@@ -9,11 +9,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { User, Mail, Shield, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { updateProfile } from "@/lib/api"; // ✅ caminho corrigido
+import { useUpdateProfile } from "@/lib/api"; // ✅ hook correto
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const updateProfileMutation = useUpdateProfile(); // hook react-query
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -23,7 +25,7 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     try {
-      await updateProfile({
+      await updateProfileMutation.mutateAsync({
         name: formData.name,
         avatar: formData.avatar,
       });
@@ -32,7 +34,7 @@ export default function ProfilePage() {
         description: "Suas informações foram salvas com sucesso.",
       });
       setIsEditing(false);
-    } catch (error) {
+    } catch {
       toast({
         title: "Erro",
         description: "Não foi possível atualizar seu perfil.",

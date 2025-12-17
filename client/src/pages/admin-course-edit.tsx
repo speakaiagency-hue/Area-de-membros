@@ -95,8 +95,10 @@ export default function AdminCourseEditPage() {
 
         {/* Selecionar curso */}
         <div className="space-y-2">
-          <Label>Selecione um curso</Label>
+          <Label htmlFor="course-select">Selecione um curso</Label>
           <select
+            id="course-select"
+            name="courseId"
             className="w-full border rounded p-2"
             value={selectedCourseId}
             onChange={(e) => setSelectedCourseId(e.target.value)}
@@ -116,7 +118,10 @@ export default function AdminCourseEditPage() {
             <CardTitle>Novo Módulo</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <Label htmlFor="module-title">Título do módulo</Label>
             <Input
+              id="module-title"
+              name="moduleTitle"
               placeholder="Título do módulo"
               value={newModuleTitle}
               onChange={(e) => setNewModuleTitle(e.target.value)}
@@ -146,11 +151,16 @@ export default function AdminCourseEditPage() {
               <CardContent>
                 {/* Criar aula */}
                 <div className="flex gap-2 mb-4">
-                  <Input
-                    placeholder="Título da aula"
-                    value={newLessonTitle}
-                    onChange={(e) => setNewLessonTitle(e.target.value)}
-                  />
+                  <div className="flex-1">
+                    <Label htmlFor={`lesson-title-${module.id}`}>Título da aula</Label>
+                    <Input
+                      id={`lesson-title-${module.id}`}
+                      name="lessonTitle"
+                      placeholder="Título da aula"
+                      value={newLessonTitle}
+                      onChange={(e) => setNewLessonTitle(e.target.value)}
+                    />
+                  </div>
                   <Button onClick={() => handleCreateLesson(module.id)} disabled={!newLessonTitle}>
                     <Plus className="h-4 w-4 mr-2" /> Adicionar Aula
                   </Button>

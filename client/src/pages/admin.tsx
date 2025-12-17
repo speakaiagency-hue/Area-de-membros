@@ -1,6 +1,7 @@
+// client/src/pages/admin.tsx
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { useCourses, useCreateCourse, useDeleteCourse, useSimulateWebhook } from "@/lib/api";
+import { useCourses, useCreateCourse, useDeleteCourse } from "@/lib/api";
 import { DashboardLayout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Upload, Edit, Trash, CreditCard, Loader2 } from "lucide-react";
+import { Plus, Upload, Edit, Trash, Loader2, CreditCard } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,11 +42,7 @@ export default function AdminDashboard() {
   const { data: courses, isLoading } = useCourses();
   const createCourseMutation = useCreateCourse();
   const deleteCourseMutation = useDeleteCourse();
-  const simulateWebhookMutation = useSimulateWebhook();
   const { toast } = useToast();
-
-  const [webhookEmail, setWebhookEmail] = useState("");
-  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [, setLocation] = useLocation();
 
   // New Course State
@@ -66,28 +63,6 @@ export default function AdminDashboard() {
       </DashboardLayout>
     );
   }
-
-  const handleSimulateWebhook = async () => {
-    if (webhookEmail && selectedCourseId) {
-      try {
-        await simulateWebhookMutation.mutateAsync({
-          email: webhookEmail,
-          courseId: selectedCourseId,
-        });
-        toast({
-          title: "Webhook Recebido",
-          description: `Acesso concedido para ${webhookEmail}`,
-        });
-        setWebhookEmail("");
-      } catch (error: any) {
-        toast({
-          title: "Erro",
-          description: error.message || "Erro ao processar webhook",
-          variant: "destructive",
-        });
-      }
-    }
-  };
 
   const handleDeleteCourse = async (id: string, title: string) => {
     if (confirm(`Tem certeza que deseja excluir o curso "${title}"? Esta ação não pode ser desfeita.`)) {
@@ -283,11 +258,10 @@ export default function AdminDashboard() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="text-destructive hover:bg-destructive/10"
-                                onClick={() => handleDeleteCourse(course.id, course.title ?? "")}
                                 title="Excluir Curso"
+                                onClick={() => handleDeleteCourse(course.id, course.title ?? "")}
                               >
-                                <Trash className="h-4 w-4" />
+                                <Trash className="h-4 w-4 text-destructive" />
                               </Button>
                             </div>
                           </TableCell>
@@ -297,65 +271,51 @@ export default function AdminDashboard() {
                   </Table>
                 )}
               </CardContent>
+              <CardFooter className="justify-end">
+                <Button onClick={() => setIsNewCourseOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Criar curso
+                </Button>
+              </CardFooter>
             </Card>
           </TabsContent>
 
           {/* Usuários (placeholder) */}
-          <TabsContent value="users" className="space-y-4">
+          <TabsContent value="users">
             <Card>
               <CardHeader>
                 <CardTitle>Usuários</CardTitle>
-                <CardDescription>Gerencie os usuários da plataforma</CardDescription>
+                <CardDescription>Gestão básica de usuários (em breve).</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Funcionalidade em desenvolvimento…</p>
+                <div className="text-muted-foreground">Funcionalidades de gestão de usuários serão adicionadas.</div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Integrações (Webhook Kiwify) */}
-          <TabsContent value="integrations" className="space-y-4">
+          {/* Integrações Kiwify */}
+          <TabsContent value="integrations">
             <Card>
               <CardHeader>
-                <CardTitle>Simular Webhook Kiwify</CardTitle>
-                <CardDescription>Teste a integração enviando um webhook manualmente</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Kiwify
+                </CardTitle>
+                <CardDescription>
+                  Webhooks reais da Kiwify são recebidos pelo backend na rota configurada. Não há simulação no
+                  frontend.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Email do Usuário</Label>
-                  <Input
-                    placeholder="usuario@exemplo.com"
-                    value={webhookEmail}
-                    onChange={(e) => setWebhookEmail(e.target.value)}
-                  />
+              <CardContent className="space-y-3">
+                <div className="space-y-1 text-sm">
+                  <p>
+                    1) No painel da Kiwify, configure a URL do webhook para apontar ao seu backend:
+                    <code className="ml-1">/api/webhook/kiwify</code>.
+                  </p>
+                  <p>2) O backend cria a matrícula e libera o curso quando receber uma venda.</p>
+                  <p>3) O frontend apenas reflete os dados já processados (cursos e matrículas).</p>
                 </div>
-                <div className="space-y-2">
-                  <Label>Curso</Label>
-                  <select
-                    className="w-full border rounded p-2"
-                    value={selectedCourseId}
-                    onChange={(e) => setSelectedCourseId(e.target.value)}
-                  >
-                    <option value="">Selecione um curso</option>
-                    {courses?.map((course) => (
-                      <option key={course.id} value={course.id}>
-                        {course.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <Button
-                  onClick={handleSimulateWebhook}
-                  disabled={!webhookEmail || !selectedCourseId}
-                  className="gap-2"
-                >
-                  <CreditCard className="h-4 w-4" />
-                  Simular Webhook
-                </Button>
               </CardContent>
-              <CardFooter className="text-xs text-muted-foreground">
-                Dica: configure KIWIFY_PRODUCT_MAPPING no backend para mapear Product.id → courseId.
-              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>

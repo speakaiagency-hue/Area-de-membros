@@ -277,14 +277,7 @@ export function useDeleteModule() {
 export function useCreateLesson() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (lesson: {
-      moduleId: string;
-      title: string;
-      videoUrl?: string;
-      pdfUrl?: string;
-      duration?: string;
-      order: number;
-    }) => {
+    mutationFn: async (lesson: { moduleId: string; title: string; order: number; videoUrl?: string; pdfUrl?: string; duration?: number }) => {
       return fetchWithCredentials("/api/lessons", {
         method: "POST",
         body: JSON.stringify(lesson),
@@ -296,54 +289,4 @@ export function useCreateLesson() {
   });
 }
 
-export function useUpdateLesson() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { title?: string; videoUrl?: string; pdfUrl?: string; duration?: string; order?: number } }) => {
-      return fetchWithCredentials(`/api/lessons/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-    },
-  });
-}
-
-export function useDeleteLesson() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      return fetchWithCredentials(`/api/lessons/${id}`, {
-        method: "DELETE",
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-    },
-  });
-}
-
-/* ==================== PROFILE + WEBHOOK ==================== */
-export async function updateProfile(data: { name: string; avatar: string }) {
-  return fetchWithCredentials("/api/profile", {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
-}
-
-export function useSimulateWebhook() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (payload: { email: string; courseId: string }) => {
-      return fetchWithCredentials("/api/webhooks/kiwify", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
-    },
-  });
-}
+export
